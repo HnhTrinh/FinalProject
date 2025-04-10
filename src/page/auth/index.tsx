@@ -1,29 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Button } from "antd";
-import { loginService } from "../../services/authen.service";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
-import { login } from "../../redux/user";
-import { CartItem } from "../../types";
-import { addToCart } from "../../redux/cart";
+import { authAPI } from "../../services/api";
 
 const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch()
   const [form] = Form.useForm();
 
   const handleLogin = async (values: { email: string; password: string }) => {
     try {
-      // Call API
-      const res = await loginService(values);
+      // Sử dụng authAPI để đăng nhập
+      const res = await authAPI.login(values);
       console.log("🚀 ~ handleLogin ~ res:", res)
       if (res.status !== 200) {
         toast.error("Authentication failed!");
         setError("Authentication failed!")
         return;
       }
+
       // Lấy dữ liệu người dùng và token từ response
       const responseData = res.data.data;
       console.log("responseBE:", responseData);
@@ -48,35 +44,7 @@ const LoginPage: React.FC = () => {
       localStorage.setItem('user_phone', userData.phone);
       localStorage.setItem('user_address', userData.address);
 
-      // Update Redux state
-      dispatch(login({
-        id: userData._id,
-        email: userData.email,
-        address: userData.address,
-        name: userData.name,
-        phone: userData.phone,
-        isAdmin: userData.isAdmin
-      }));
-
       toast.success("Authentication successful!");
-
-      // Lấy giỏ hàng nếu có
-      if (userData.cartItems && userData.cartItems.length > 0) {
-        userData.cartItems.forEach((item: { product: any; quantity: number }) => {
-          if (item.product) {
-            const cartItem = {
-              id: item.product.id || item.product._id,
-              name: item.product.name,
-              pictureURL: item.product.pictureURL,
-              feature: item.product.feature || [],
-              quantity: item.quantity,
-              price: item.product.price
-            } as CartItem;
-
-            dispatch(addToCart(cartItem));
-          }
-        });
-      }
 
       // Chuyển hướng dựa vào quyền admin
       navigate(userData.isAdmin ? "/admin/product" : '/');

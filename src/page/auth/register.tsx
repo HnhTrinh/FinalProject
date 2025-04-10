@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Button } from "antd";
-import { registerService } from "../../services/authen.service";
 import { toast } from "react-toastify";
 import { IUserData } from "../../types/authen.type";
+import { authAPI } from "../../services/api";
 
 const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
@@ -12,13 +12,13 @@ const RegisterPage: React.FC = () => {
 
   const handleRegister = async (values: IUserData) => {
     try {
-      const res = await registerService(values);
+      const res = await authAPI.register(values);
       if (res.status !== 201) {
         toast.error("Registration failed!");
         setError("Registration failed!");
         return;
       }
-      
+
       toast.success("Registration successful! Please login.");
       navigate('/login');
     } catch (error) {

@@ -17,12 +17,15 @@ import AuthInitializer from './components/AuthInitializer'
 import NotFoundPage from './page/not-found'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
         <AuthInitializer />
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
         <Routes>
           {/* Public routes - chỉ truy cập khi chưa đăng nhập */}
           <Route element={<PublicRoute />}>
