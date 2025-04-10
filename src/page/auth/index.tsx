@@ -5,9 +5,6 @@ import { loginService } from "../../services/authen.service";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { login } from "../../redux/user";
-import { IUserData } from "../../types/authen.type";
-import { getUser } from "../../services/user";
-import { getCartService } from "../../services/cart";
 import { CartItem } from "../../types";
 import { addToCart } from "../../redux/cart";
 
@@ -17,62 +14,72 @@ const LoginPage: React.FC = () => {
   const dispatch = useDispatch()
   const [form] = Form.useForm();
 
-  const fetchCart = async (user: IUserData) => {
-    const res = await getCartService(user?.id || '')
-    const data = res.data.items as any[]
-
-    data.forEach(item => {
-      const cartItem = {
-        id: item.id,
-        name: item.Product.name,
-        pictureURL: item.Product.pictureURL,
-        feature: item.Product.feature,
-        quantity: item.amount,
-        price: item.Product.price
-
-      } as CartItem
-      console.log("🚀 ~ fetchCart ~ cartItem:", cartItem)
-
-      dispatch(addToCart(cartItem))
-    })
-
-  }
-
   const handleLogin = async (values: { email: string; password: string }) => {
-
     try {
-      // Mock API Call
+      // Call API
       const res = await loginService(values);
-
+      console.log("🚀 ~ handleLogin ~ res:", res)
       if (res.status !== 200) {
         toast.error("Authentication failed!");
         setError("Authentication failed!")
         return;
       }
+      // Lấy dữ liệu người dùng và token từ response
+      const responseData = res.data.data;
+      console.log("responseBE:", responseData);
 
-      const accessToken = res.data?.result as string;
-      localStorage.setItem('access_token', accessToken)
-      localStorage.setItem('authorization', 'true')
+      if (!responseData || !responseData.user) {
+        toast.error("User data not found!");
+        setError("User data not found!")
+        return;
+      }
 
+      const userData = responseData.user;
+      const token = responseData.token;
+      console.log("userData từ res.user:", userData);
 
-      const userRes = await getUser(values.email)
+      // Lưu thông tin vào localStorage
+      localStorage.setItem('access_token', token); // Lưu JWT token
+      localStorage.setItem('authorization', 'true');
+      localStorage.setItem('user_id', userData._id);
+      localStorage.setItem('user_email', userData.email);
+      localStorage.setItem('user_name', userData.name);
+      localStorage.setItem('user_isAdmin', userData.isAdmin.toString());
+      localStorage.setItem('user_phone', userData.phone);
+      localStorage.setItem('user_address', userData.address);
 
-      const data = userRes.data.result as IUserData
       // Update Redux state
       dispatch(login({
-        id: data.id,
-        email: data.email,
-        address: data.address,
-        name: data.name,
-        phone: data.phone,
-        isAdmin: data.isAdmin
+        id: userData._id,
+        email: userData.email,
+        address: userData.address,
+        name: userData.name,
+        phone: userData.phone,
+        isAdmin: userData.isAdmin
       }));
 
       toast.success("Authentication successful!");
 
-      await fetchCart(data)
+      // Lấy giỏ hàng nếu có
+      if (userData.cartItems && userData.cartItems.length > 0) {
+        userData.cartItems.forEach((item: { product: any; quantity: number }) => {
+          if (item.product) {
+            const cartItem = {
+              id: item.product.id || item.product._id,
+              name: item.product.name,
+              pictureURL: item.product.pictureURL,
+              feature: item.product.feature || [],
+              quantity: item.quantity,
+              price: item.product.price
+            } as CartItem;
 
-      navigate(data.isAdmin ? "/admin/product" : '/'); // Redirect to Admin page
+            dispatch(addToCart(cartItem));
+          }
+        });
+      }
+
+      // Chuyển hướng dựa vào quyền admin
+      navigate(userData.isAdmin ? "/admin/product" : '/');
     } catch (error) {
       toast.error("Something went wrong!");
       console.error(error);

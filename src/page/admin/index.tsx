@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Table, Button, Modal, Input, Form, message, Space, Popconfirm, Upload } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import AdminNavbar from "../../components/AdminNavbar";
 
 import { RcFile } from "antd/es/upload";
 import { Product } from "../../types";
@@ -114,8 +115,10 @@ const AdminPage: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-3xl font-bold mb-6">Admin Product Management</h2>
+    <div>
+      <AdminNavbar />
+      <div className="container mx-auto p-6">
+        <h2 className="text-3xl font-bold mb-6">Admin Product Management</h2>
 
       {/* Product Table */}
       <Button
@@ -230,6 +233,7 @@ const AdminPage: React.FC = () => {
           </div>
         </Form>
       </Modal>
+      </div>
     </div>
   );
 };
