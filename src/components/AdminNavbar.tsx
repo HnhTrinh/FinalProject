@@ -51,15 +51,32 @@ const AdminNavbar: React.FC = () => {
           </Menu.Item>
 
           <Menu.Item key="user">
-            <Dropdown menu={{ items: [
-              { key: 'profile', label: <span><b>Email:</b> {userInfo.email}</span> },
-              { key: 'logout', label: <span onClick={handleLogout}><LogoutOutlined /> Logout</span> }
-            ]}} placement="bottomRight">
-              <Button type="text" icon={<UserOutlined />} className="flex items-center text-white">
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'profile',
+                    label: <span><b>Email:</b> {userInfo.email}</span>,
+                  },
+                  {
+                    key: 'logout',
+                    label: (
+                      <span onClick={handleLogout}>
+                        <LogoutOutlined /> Logout
+                      </span>
+                    ),
+                  },
+                ],
+              }}
+              placement="bottomRight"
+            >
+              <div className="flex items-center text-white cursor-pointer">
+                <UserOutlined />
                 <span className="ml-1">{userInfo.name || 'Admin'}</span>
-              </Button>
+              </div>
             </Dropdown>
           </Menu.Item>
+
         </Menu>
       </div>
     </div>

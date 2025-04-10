@@ -1,5 +1,11 @@
 import { Menu, Button, Dropdown } from "antd";
-import { HomeOutlined, ShopOutlined, PhoneOutlined, ShoppingCartOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  HomeOutlined,
+  ShopOutlined,
+  PhoneOutlined,
+  ShoppingCartOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
@@ -7,11 +13,16 @@ import { logout } from "../redux/user";
 
 const Navbar = () => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.user);
+  const { isAuthenticated, user } = useSelector(
+    (state: RootState) => state.user
+  );
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const totalItems = cartItems.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
 
   const handleLogout = () => {
     // Xóa tất cả dữ liệu trong localStorage
@@ -21,10 +32,8 @@ const Navbar = () => {
     dispatch(logout());
 
     // Chuyển hướng về trang chủ
-    navigate('/');
+    navigate("/");
   };
-
-
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -46,7 +55,11 @@ const Navbar = () => {
             <Link to="/contact">Contact</Link>
           </Menu.Item>
 
-          <Menu.Item key="cart" icon={<ShoppingCartOutlined />} className="relative">
+          <Menu.Item
+            key="cart"
+            icon={<ShoppingCartOutlined />}
+            className="relative"
+          >
             <Link to="/cart">
               {totalItems > 0 && (
                 <span className="absolute top-3 right-0 -translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-semibold rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
@@ -59,14 +72,39 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <Menu.Item key="user">
-              <Dropdown menu={{ items: [
-                { key: 'profile', label: <span><b>Email:</b> {user?.email}</span> },
-                ...(user?.isAdmin ? [{ key: 'admin', label: <Link to="/admin/product">Admin Dashboard</Link> }] : []),
-                { key: 'logout', label: <span onClick={handleLogout}>Logout</span> }
-              ]}} placement="bottomRight">
-                <Button icon={<UserOutlined />} className="flex items-center">
-                  <span className="ml-1">{user?.name || 'User'}</span>
-                </Button>
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: "profile",
+                      label: (
+                        <span>
+                          <b>Email:</b> {user?.email}
+                        </span>
+                      ),
+                    },
+                    ...(user?.isAdmin
+                      ? [
+                          {
+                            key: "admin",
+                            label: (
+                              <Link to="/admin/product">Admin Dashboard</Link>
+                            ),
+                          },
+                        ]
+                      : []),
+                    {
+                      key: "logout",
+                      label: <span onClick={handleLogout}>Logout</span>,
+                    },
+                  ],
+                }}
+                placement="bottomRight"
+              >
+                <div className="flex items-center cursor-pointer">
+                  <UserOutlined />
+                  <span className="ml-1">{user?.name || "User"}</span>
+                </div>
               </Dropdown>
             </Menu.Item>
           ) : (
