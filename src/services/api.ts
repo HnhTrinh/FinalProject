@@ -100,11 +100,21 @@ export const productAPI = {
 
 // Cart APIs
 export const cartAPI = {
+  // Thêm sản phẩm vào giỏ hàng
   addToCart: (values: any) => {
     return axiosInstance.post('/cart', values);
   },
-  getCart: (userId: any) => {
-    return axiosInstance.get(`/cart/${userId}`);
+  // Lấy tất cả sản phẩm trong giỏ hàng
+  getCart: () => {
+    return axiosInstance.get('/cart');
+  },
+  // Cập nhật số lượng sản phẩm trong giỏ hàng
+  updateCartItem: (values: any) => {
+    return axiosInstance.put('/cart', values);
+  },
+  // Xóa sản phẩm khỏi giỏ hàng
+  removeCartItem: (productId: any) => {
+    return axiosInstance.delete('/cart', { data: { productId } });
   }
 };
 

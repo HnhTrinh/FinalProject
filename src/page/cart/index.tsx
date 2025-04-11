@@ -1,110 +1,270 @@
+// @ts-nocheck
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { cartAPI, authAPI } from "../../services/api";
+import { Button, Table, InputNumber, Empty, Spin } from "antd";
+import { DeleteOutlined, ShoppingOutlined } from "@ant-design/icons";
 
-import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { removeFromCart, updateQuantity } from "../../redux/cart";
-import { RootState } from "../../store";
-import { CartItem } from "../../types";
-
-const Cart: React.FC = () => {
-  const { cart } = useSelector((state: RootState) => state);
-  const dispatch = useDispatch();
+const Cart = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [cartItems, setCartItems] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
 
-  const handleRemove = (id: string) => {
-    dispatch(removeFromCart(id));
+  // Kiểm tra xác thực và lấy dữ liệu giỏ hàng
+  useEffect(() => {
+    const checkAuthAndFetchCart = async () => {
+      const { isAuthenticated } = authAPI.checkToken();
+
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await cartAPI.getCart();
+        if (response.data?.success) {
+          console.log('Cart data:', response.data.data);
+          // Lấy items từ data.items
+          const items = response.data.data?.items || [];
+          setCartItems(items);
+        } else {
+          toast.error(response.data?.message || "Không thể tải giỏ hàng");
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải giỏ hàng:", error);
+        toast.error("Không thể tải giỏ hàng");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuthAndFetchCart();
+  }, [navigate]);
+
+  // Tính tổng tiền khi cartItems hoặc selectedRowKeys thay đổi
+  useEffect(() => {
+    const total = cartItems
+      .filter(item => selectedRowKeys.includes(item._id))
+      .reduce((sum, item) => {
+        const price = item.productDetails?.price || 0;
+        return sum + (price * item.quantity);
+      }, 0);
+
+    setTotalPrice(total);
+  }, [cartItems, selectedRowKeys]);
+
+  // Xử lý thay đổi số lượng
+  const handleQuantityChange = async (record, value) => {
+    if (value < 1) return;
+
+    const productId = record.productId;
+
+    try {
+      const response = await cartAPI.updateCartItem({
+        productId,
+        quantity: value
+      });
+
+      if (response.data?.success) {
+        setCartItems(prev =>
+          prev.map(item => {
+            return item._id === record._id ? { ...item, quantity: value } : item;
+          })
+        );
+        toast.success("Cập nhật giỏ hàng thành công");
+      } else {
+        toast.error(response.data?.message || "Không thể cập nhật giỏ hàng");
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật giỏ hàng:", error);
+      toast.error("Không thể cập nhật giỏ hàng");
+    }
   };
 
-  const handleQuantityChange = (id: string, quantity: number) => {
-    dispatch(updateQuantity({ id, quantity }));
+  // Xử lý xóa sản phẩm
+  const handleRemoveItem = async (record) => {
+    const productId = record.productId;
+
+    try {
+      const response = await cartAPI.removeCartItem(productId);
+
+      if (response.data?.success) {
+        setCartItems(prev => prev.filter(item => item._id !== record._id));
+        setSelectedRowKeys(prev => prev.filter(key => key !== record._id));
+        toast.success("Đã xóa sản phẩm khỏi giỏ hàng");
+      } else {
+        toast.error(response.data?.message || "Không thể xóa sản phẩm");
+      }
+    } catch (error) {
+      console.error("Lỗi khi xóa sản phẩm:", error);
+      toast.error("Không thể xóa sản phẩm");
+    }
   };
 
-  const totalPrice = cart.items.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
+  // Xử lý chọn hàng
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+    getCheckboxProps: (record) => ({
+      disabled: record.productExists === false,
+    }),
+  };
+
+  // Định nghĩa cột
+  const columns = [
+    {
+      title: 'Sản phẩm',
+      dataIndex: 'productDetails',
+      key: 'productDetails',
+      render: (productDetails, record) => {
+        const productExists = record.productExists !== false;
+
+        return (
+          <div className="flex items-center">
+            <img
+              src={productDetails?.pictureURL || "https://via.placeholder.com/80x80"}
+              alt={productDetails?.name}
+              className="w-16 h-16 object-cover rounded mr-4"
+            />
+            <div>
+              <div className="font-medium">{productDetails?.name}</div>
+              {!productExists && (
+                <div className="text-red-500 text-xs">Sản phẩm không còn tồn tại</div>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Giá',
+      dataIndex: ['productDetails', 'price'],
+      key: 'price',
+      render: (price) => <span>${(price || 0).toFixed(2)}</span>,
+    },
+    {
+      title: 'Số lượng',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (quantity, record) => {
+        const productExists = record.productExists !== false;
+
+        return (
+          <InputNumber
+            min={1}
+            value={quantity}
+            onChange={(value) => handleQuantityChange(record, value)}
+            disabled={!productExists}
+            className="w-16"
+          />
+        );
+      },
+    },
+    {
+      title: 'Tổng',
+      key: 'total',
+      render: (_, record) => {
+        const price = record.productDetails?.price || 0;
+        return <span className="font-medium">${(price * record.quantity).toFixed(2)}</span>;
+      },
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      render: (_, record) => (
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveItem(record)}
+        >
+          Xóa
+        </Button>
+      ),
+    },
+  ];
+
+  // Xử lý thanh toán
+  const handleCheckout = () => {
+    if (selectedRowKeys.length === 0) {
+      toast.warning("Vui lòng chọn ít nhất một sản phẩm để thanh toán");
+      return;
+    }
+
+    navigate("/checkout", { state: { selectedItems: selectedRowKeys } });
+  };
+
+  // Hiển thị trạng thái loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spin size="large" tip="Đang tải giỏ hàng..." />
+      </div>
+    );
+  }
+
+  // Hiển thị giỏ hàng trống
+  if (cartItems.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Giỏ hàng của bạn đang trống"
+        >
+          <Link to="/">
+            <Button type="primary" icon={<ShoppingOutlined />}>
+              Tiếp tục mua sắm
+            </Button>
+          </Link>
+        </Empty>
+      </div>
+    );
+  }
+
+  // Chuẩn bị dữ liệu cho bảng
+  const dataSource = cartItems.map(item => ({
+    key: item._id,
+    ...item
+  }));
 
   return (
-    <div className="bg-gray-100 min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Shopping Cart</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Giỏ hàng của bạn</h1>
 
-        {cart.items.length === 0 ? (
-          <div className="text-center text-gray-500">
-            <p className="text-xl">Your cart is currently empty.</p>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <Table
+          rowSelection={rowSelection}
+          columns={columns}
+          dataSource={dataSource}
+          pagination={false}
+          rowKey={record => record._id}
+        />
+      </div>
+
+      <div className="flex justify-between items-center">
+        <Link to="/">
+          <Button>Tiếp tục mua sắm</Button>
+        </Link>
+
+        <div className="text-right">
+          <div className="text-lg mb-2">
+            <span className="font-medium">Tổng tiền: </span>
+            <span className="text-xl text-red-600 font-bold">${totalPrice.toFixed(2)}</span>
           </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full table-auto">
-                <thead>
-                  <tr className="bg-gray-200 text-left">
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Product</th>
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Price</th>
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Quantity</th>
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Total</th>
-                    <th className="py-3 px-4 text-sm font-semibold text-gray-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cart.items.map((item: CartItem, key: number) => (
-                    <tr key={key} className="border-b hover:bg-gray-50">
-                      <td className="py-4 px-4 flex items-center">
-                        <img src={item.pictureURL} alt={item.name} className="w-16 h-16 rounded-md mr-4" />
-                        <span className="text-sm text-gray-800">{item.name}</span>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-600">{item.price}</td>
-                      <td className="py-4 px-4">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
-                          className="w-20 p-2 text-center border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-600">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </td>
-                      <td className="py-4 px-4">
-                        <button
-                          onClick={() => handleRemove(item.id)}
-                          className="text-red-600 hover:text-red-800 font-semibold"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
 
-            {/* Cart Summary */}
-            <div className="mt-8 flex justify-between items-center">
-              <div>
-                <button
-                  onClick={() => navigate("/")}
-                  className="text-blue-600 hover:text-blue-800 font-semibold"
-                >
-                  Continue Shopping
-                </button>
-              </div>
-              <div>
-                <div className="text-xl font-semibold text-gray-800">
-                  <span className="mr-2">Total Price: </span>
-                  <span className="text-green-600">${totalPrice.toFixed(2)}</span>
-                </div>
-                <button
-                  onClick={() => navigate("/checkout")}
-                  className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-                >
-                  Proceed to Checkout
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+          <Button
+            type="primary"
+            size="large"
+            onClick={handleCheckout}
+            disabled={selectedRowKeys.length === 0}
+          >
+            Thanh toán
+          </Button>
+        </div>
       </div>
     </div>
   );

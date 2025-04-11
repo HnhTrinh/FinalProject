@@ -1,33 +1,27 @@
 // @ts-nocheck
 import { useNavigate, useParams } from "react-router-dom";
 import { Carousel, Tabs } from "antd";
-// import { products } from "../../constant/product";
-import { useDispatch, useSelector } from "react-redux";
-import { addToCart, updateQuantity } from "../../redux/cart";
-import { RootState } from "../../store";
-import { addToCartService } from "../../services/cart";
 import { useEffect, useState } from "react";
 import { getProductById } from "../../services/product";
 import { toast } from "react-toastify";
+import { cartAPI } from "../../services/api";
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { user: userData, cart: cartData } = useSelector((state: RootState) => state)
+
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchAPIProduct = async () => {
     try {
       setLoading(true)
-      const resp = await getProductById(id || '')
-      if (resp.status !== 200) {
+      const response = await getProductById(id || '')
+      if (response.status !== 200) {
         toast('Cannot fetch product detail')
         return
       }
-      console.log('Product data:', resp.data.data)
-      setProduct(resp.data.data)
+      setProduct(response.data.data)
     }
     catch (err) {
       console.error(err)
@@ -67,9 +61,28 @@ const ProductDetailsPage = () => {
     productImage,
   ];
 
+  const handleBuyNow = () => {
+    navigate(`/checkout/${id}`);
+  };
+
+  // Format feature array for display
+  const formatFeatures = (features) => {
+    if (!features || !Array.isArray(features) || features.length === 0) return [];
+
+    // Handle features that contain newlines
+    return features.flatMap(feature => {
+      if (feature.includes('\n')) {
+        return feature.split('\n').filter(f => f.trim() !== '');
+      }
+      return feature;
+    });
+  };
+
   // Kiểm tra và hiển thị tính năng sản phẩm
-  const renderFeatures = product.feature && Array.isArray(product.feature)
-    ? product.feature.map((item, index) => (
+  const formattedFeatures = formatFeatures(product.feature);
+
+  const renderFeatures = formattedFeatures.length > 0
+    ? formattedFeatures.map((item, index) => (
         <li className="flex items-center gap-3" key={index}>
           <span className="text-blue-500 text-xl">✔</span>
           <span>{item}</span>
@@ -80,29 +93,32 @@ const ProductDetailsPage = () => {
         <span>No features available</span>
       </li>
 
-  const handleBuyNow = () => {
-    navigate(`/checkout/${id}`);
-  };
-
   const handleAddToCart = async () => {
     try {
-      if (!userData.isAuthenticated) {
-        navigate('/login');
+
+      // Lấy productId từ dữ liệu sản phẩm
+      const productId = product._id || product.id;
+      if (!productId) {
+        toast.error("Product ID not found");
         return;
       }
 
-      const cartIndex = cartData.items.findIndex(cart => cart.name === product.name)
-      if (cartIndex === -1) {
-        dispatch(addToCart(product))
-      }
-      else {
-        dispatch(updateQuantity({ id: cartData.items[cartIndex].id, quantity: cartData.items[cartIndex].quantity + 1 }))
-      }
-      await addToCartService({ userId: userData.user?.id || '', productId: product._id || product.id, quantity: 1 })
+      // Gọi API để thêm sản phẩm vào giỏ hàng
+      const response = await cartAPI.addToCart({
+        productId,
+        quantity: 1
+      });
 
+      // Kiểm tra kết quả trả về từ API
+      if (response.data && response.data.success) {
+        toast.success("Product added to cart successfully");
+      } else {
+        toast.error(response.data?.message || "Failed to add product to cart");
+      }
     }
     catch (err) {
-      console.error(err)
+      console.error("Error adding to cart:", err);
+      toast.error("Failed to add product to cart");
     }
   };
 
@@ -171,10 +187,10 @@ const ProductDetailsPage = () => {
                 {product.description || `The ${product.name} is a premium product that combines cutting-edge technology with a sleek design.`}
               </p>
             </Tabs.TabPane>
-            <Tabs.TabPane tab="Specifications" key="2">
+            <Tabs.TabPane tab="Feature" key="2">
               <ul className="list-disc list-inside space-y-2 text-gray-700">
-                {product.feature && Array.isArray(product.feature) && product.feature.length > 0 ? (
-                  product.feature.map((spec, index) => (
+                {formattedFeatures.length > 0 ? (
+                  formattedFeatures.map((spec, index) => (
                     <li key={index}>{spec}</li>
                   ))
                 ) : (
@@ -182,7 +198,11 @@ const ProductDetailsPage = () => {
                 )}
                 <li>Price: {(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</li>
                 <li>In Stock: {product.amountInStore || 0}</li>
-                {product.category && <li>Category: {typeof product.category === 'object' ? product.category.name : product.category}</li>}
+                {product.category && (
+                  <li>
+                    Category: {typeof product.category === 'object' ? product.category.name : product.category}
+                  </li>
+                )}
               </ul>
             </Tabs.TabPane>
             <Tabs.TabPane tab="Reviews" key="3">
