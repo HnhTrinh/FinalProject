@@ -12,12 +12,46 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
+    console.log("Token from localStorage:", token);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("Request headers:", config.headers);
+    } else {
+      console.warn("No token found in localStorage!");
     }
+
+    console.log("API Request:", {
+      url: config.url,
+      method: config.method,
+      data: config.data
+    });
+
     return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor để xử lý response
+axiosInstance.interceptors.response.use(
+  (response) => {
+    console.log("API Response:", {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
+  (error) => {
+    console.error("API Error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message,
+      response: error.response?.data
+    });
     return Promise.reject(error);
   }
 );
@@ -29,6 +63,13 @@ export const authAPI = {
   },
   register: (data: any) => {
     return axiosInstance.post('/auth/register', data);
+  },
+  checkToken: () => {
+    const token = localStorage.getItem('access_token');
+    return {
+      isAuthenticated: !!token,
+      token
+    };
   }
 };
 
@@ -42,6 +83,18 @@ export const productAPI = {
   },
   create: (data: any) => {
     return axiosInstance.post('/products', data);
+  },
+  update: (id: any, data: any) => {
+    return axiosInstance.put(`/products/${id}`, data);
+  },
+  delete: (id: any) => {
+    return axiosInstance.delete(`/products/${id}`);
+  },
+  uploadImage: (file: any) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'unsigned_preset');
+    return axios.post('https://api.cloudinary.com/v1_1/dr55r3y3z/image/upload', formData);
   }
 };
 
@@ -59,6 +112,25 @@ export const cartAPI = {
 export const userAPI = {
   getUser: (email: any) => {
     return axiosInstance.get(`/user/${email}`);
+  }
+};
+
+// Category APIs
+export const categoryAPI = {
+  getAll: () => {
+    return axiosInstance.get('/category');
+  },
+  getById: (id: any) => {
+    return axiosInstance.get(`/category/${id}`);
+  },
+  create: (data: any) => {
+    return axiosInstance.post('/category', data);
+  },
+  update: (id: any, data: any) => {
+    return axiosInstance.put(`/category/${id}`, data);
+  },
+  delete: (id: any) => {
+    return axiosInstance.delete(`/category/${id}`);
   }
 };
 

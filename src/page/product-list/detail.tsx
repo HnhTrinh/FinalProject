@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useNavigate, useParams } from "react-router-dom";
 import { Carousel, Tabs } from "antd";
 // import { products } from "../../constant/product";
@@ -8,31 +9,46 @@ import { addToCartService } from "../../services/cart";
 import { useEffect, useState } from "react";
 import { getProductById } from "../../services/product";
 import { toast } from "react-toastify";
-import { IProductData } from "../../types/product.type";
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user: userData, cart: cartData } = useSelector((state: RootState) => state)
-  const [product, setProduct] = useState<IProductData>()
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const fetchAPIProduct = async () => {
     try {
+      setLoading(true)
       const resp = await getProductById(id || '')
       if (resp.status !== 200) {
         toast('Cannot fetch product detail')
         return
       }
+      console.log('Product data:', resp.data.data)
       setProduct(resp.data.data)
-
     }
-    catch (err) { console.error(err) }
+    catch (err) {
+      console.error(err)
+      toast.error('Error fetching product details')
+    }
+    finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
     fetchAPIProduct()
   }, [])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-800">Loading...</h2>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -42,18 +58,27 @@ const ProductDetailsPage = () => {
     );
   }
 
+  // Sử dụng pictureURL từ API hoặc ảnh mặc định
+  const productImage = product.pictureURL || 'https://via.placeholder.com/400x400?text=No+Image';
+
   const placeholderImages = [
-    product.pictureURL,
-    product.pictureURL,
-    product.pictureURL,
+    productImage,
+    productImage,
+    productImage,
   ];
 
-  const renderFeatures = product.feature?.map((item, index) => (
-    <li className="flex items-center gap-3" key={index}>
-      <span className="text-blue-500 text-xl">✔</span>
-      <span>{item}</span>
-    </li>
-  ))
+  // Kiểm tra và hiển thị tính năng sản phẩm
+  const renderFeatures = product.feature && Array.isArray(product.feature)
+    ? product.feature.map((item, index) => (
+        <li className="flex items-center gap-3" key={index}>
+          <span className="text-blue-500 text-xl">✔</span>
+          <span>{item}</span>
+        </li>
+      ))
+    : <li className="flex items-center gap-3">
+        <span className="text-blue-500 text-xl">✔</span>
+        <span>No features available</span>
+      </li>
 
   const handleBuyNow = () => {
     navigate(`/checkout/${id}`);
@@ -73,7 +98,7 @@ const ProductDetailsPage = () => {
       else {
         dispatch(updateQuantity({ id: cartData.items[cartIndex].id, quantity: cartData.items[cartIndex].quantity + 1 }))
       }
-      await addToCartService({ userId: userData.user?.id || '', productId: product.id.toString(), quantity: 1 })
+      await addToCartService({ userId: userData.user?.id || '', productId: product._id || product.id, quantity: 1 })
 
     }
     catch (err) {
@@ -107,11 +132,13 @@ const ProductDetailsPage = () => {
               {product.name}
             </h1>
             <p className="text-3xl text-green-600 font-semibold mb-4">
-              {`${product.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}
+              {`${(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}
+            </p>
+            <p className="text-lg text-blue-600 mb-4">
+              In Stock: {product.amountInStore || 0}
             </p>
             <p className="text-gray-700 text-lg leading-relaxed mb-6">
-              Elevate your experience with the {product.name}. Designed to
-              impress, built to perform.
+              {product.description || `Elevate your experience with the ${product.name}. Designed to impress, built to perform.`}
             </p>
 
             {/* Features Section */}
@@ -141,19 +168,21 @@ const ProductDetailsPage = () => {
           <Tabs defaultActiveKey="1" size="large">
             <Tabs.TabPane tab="Description" key="1">
               <p className="text-gray-700 leading-relaxed">
-                The {product.name} is a premium device that combines cutting-edge
-                technology with a sleek design. Whether you're capturing memories,
-                staying productive, or enjoying multimedia, this device delivers
-                excellence.
+                {product.description || `The ${product.name} is a premium product that combines cutting-edge technology with a sleek design.`}
               </p>
             </Tabs.TabPane>
             <Tabs.TabPane tab="Specifications" key="2">
               <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>Display: 6.5-inch AMOLED</li>
-                <li>Processor: Octa-core 3.2 GHz</li>
-                <li>Battery: 5000mAh</li>
-                <li>Camera: 108 MP + 12 MP + 10 MP</li>
-                <li>Storage: 256GB</li>
+                {product.feature && Array.isArray(product.feature) && product.feature.length > 0 ? (
+                  product.feature.map((spec, index) => (
+                    <li key={index}>{spec}</li>
+                  ))
+                ) : (
+                  <li>No specifications available</li>
+                )}
+                <li>Price: {(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</li>
+                <li>In Stock: {product.amountInStore || 0}</li>
+                {product.category && <li>Category: {typeof product.category === 'object' ? product.category.name : product.category}</li>}
               </ul>
             </Tabs.TabPane>
             <Tabs.TabPane tab="Reviews" key="3">
@@ -169,7 +198,7 @@ const ProductDetailsPage = () => {
           <div>
             <h3 className="text-lg font-bold text-gray-800">{product.name}</h3>
             <p className="text-lg text-green-600 font-semibold">
-              {product.price}
+              {(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
             </p>
           </div>
           <button className="px-6 py-3 bg-blue-500 text-white font-bold text-lg rounded-lg hover:bg-blue-600 transform transition-all" onClick={handleBuyNow}>

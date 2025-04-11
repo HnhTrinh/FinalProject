@@ -1,80 +1,144 @@
-import React, { useState } from "react";
-import { Table, Button, Modal, Input, Form, message, Space, Popconfirm } from "antd";
-import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+// @ts-nocheck
+import { useState, useEffect } from "react";
+import { Table, Button, Modal, Input, Form, message, Space, Popconfirm, Spin } from "antd";
+import { EditOutlined, DeleteOutlined, PlusOutlined, LoadingOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import AdminNavbar from "../../components/AdminNavbar";
-import { categories } from "../../constant/category";
+import { categoryAPI, authAPI } from "../../services/api";
 
-interface Category {
-  id: number;
-  name: string;
-  image: string;
-}
-
-const AdminCategoryPage: React.FC = () => {
-  const [categoryList, setCategoryList] = useState<Category[]>(categories);
+const AdminCategoryPage = () => {
+  // Quản lý state đơn giản
+  const [categories, setCategories] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
+  const navigate = useNavigate();
+
+  // Kiểm tra token và fetch data khi component mounts
+  useEffect(() => {
+    const { isAuthenticated, token } = authAPI.checkToken();
+    console.log("Auth check on admin category page:", { isAuthenticated, token });
+
+    if (!isAuthenticated) {
+      message.error("You must be logged in to access this page");
+      navigate("/login");
+      return;
+    }
+
+    fetchCategories();
+  }, [navigate]);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await categoryAPI.getAll();
+      setCategories(response.data.data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      message.error("Failed to load categories");
+      setLoading(false);
+    }
+  };
+
   const handleAddCategory = () => {
+    form.resetFields();
     setIsEditing(false);
     setEditingCategory(null);
-    form.resetFields();
     setIsModalVisible(true);
   };
 
-  const handleEditCategory = (category: Category) => {
+  const handleEditCategory = (data) => {
+    form.setFieldsValue({
+      name: data.name
+    });
     setIsEditing(true);
-    setEditingCategory(category);
-    form.setFieldsValue(category);
+    setEditingCategory(data);
     setIsModalVisible(true);
   };
 
-  const handleDeleteCategory = (id: number) => {
-    setCategoryList(categoryList.filter((category) => category.id !== id));
-    message.success("Category deleted successfully.");
+  const handleDeleteCategory = async (id) => {
+    if (!id) {
+      message.error("Category ID is required");
+      return;
+    }
+    try {
+      const response = await categoryAPI.delete(id);
+
+      // Kiểm tra kết quả trả về từ API
+      if (response.data && response.data.success === false) {
+        // Hiển thị thông báo lỗi từ API
+        message.error(response.data.message || "Failed to delete category");
+        console.error("API error:", response.data);
+        return;
+      }
+
+      message.success("Category deleted successfully.");
+      fetchCategories(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting category:", error);
+
+      // Kiểm tra nếu có thông báo lỗi từ API
+      if (error.response && error.response.data) {
+        message.error(error.response.data.message || "Failed to delete category");
+      } else {
+        message.error("Failed to delete category");
+      }
+    }
   };
 
   const handleModalClose = () => {
     setIsModalVisible(false);
+    form.resetFields();
   };
 
-  const handleSaveCategory = (values: any) => {
-    if (isEditing && editingCategory) {
-      // Edit existing category
-      setCategoryList(
-        categoryList.map((category) =>
-          category.id === editingCategory.id ? { ...category, ...values } : category
-        )
-      );
-      message.success("Category updated successfully.");
-    } else {
-      // Add new category
-      const newCategory = {
-        ...values,
-        id: Math.max(0, ...categoryList.map(c => c.id)) + 1
+  const handleSaveCategory = async (values) => {
+    try {
+      console.log("Form values:", values);
+
+      // Kiểm tra token trước khi gọi API
+      const token = localStorage.getItem("access_token");
+      console.log("Token before API call:", token);
+
+      const categoryData = {
+        ...values
       };
-      setCategoryList([...categoryList, newCategory]);
-      message.success("Category added successfully.");
+
+      console.log("Category data to be saved:", categoryData);
+
+      if (isEditing && editingCategory) {
+        // Update existing category
+        const categoryId = editingCategory._id || editingCategory.id;
+        console.log("Updating category with ID:", categoryId);
+        await categoryAPI.update(categoryId, categoryData);
+        message.success("Category updated successfully.");
+      } else {
+        // Create new category
+        console.log("Creating new category");
+        const response = await categoryAPI.create(categoryData);
+        console.log("Create category response:", response);
+        message.success("Category added successfully.");
+      }
+
+      setIsModalVisible(false);
+      fetchCategories(); // Refresh the list
+    } catch (error) {
+      console.error("Error saving category:", error);
+      console.error("Error details:", error.response?.data || error.message);
+      message.error(`Failed to save category: ${error.response?.data?.message || error.message}`);
     }
-    setIsModalVisible(false);
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    { title: "ID", dataIndex: "_id", key: "_id" },
     { title: "Name", dataIndex: "name", key: "name" },
-    {
-      title: "Image",
-      key: "image",
-      render: (text: any, record: Category) => (
-        <img src={record.image} alt={record.name} className="w-12 h-12 object-cover rounded" />
-      ),
-    },
     {
       title: "Action",
       key: "action",
-      render: (text: any, record: Category) => (
+      render: (_, record) => (
         <Space size="middle">
           <Button
             type="primary"
@@ -83,7 +147,7 @@ const AdminCategoryPage: React.FC = () => {
           />
           <Popconfirm
             title="Are you sure to delete this category?"
-            onConfirm={() => handleDeleteCategory(record.id)}
+            onConfirm={() => handleDeleteCategory(record._id || record.id)}
             okText="Yes"
             cancelText="No"
           >
@@ -109,12 +173,19 @@ const AdminCategoryPage: React.FC = () => {
         >
           Add Category
         </Button>
-        <Table
-          columns={columns}
-          dataSource={categoryList}
-          rowKey="id"
-          pagination={false}
-        />
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={categories}
+            rowKey={(record) => record._id || record.id || ''}
+            pagination={{ pageSize: 10 }}
+          />
+        )}
 
         {/* Modal for Adding/Editing Category */}
         <Modal
@@ -122,6 +193,7 @@ const AdminCategoryPage: React.FC = () => {
           open={isModalVisible}
           onCancel={handleModalClose}
           footer={null}
+          width={600}
         >
           <Form
             form={form}
@@ -134,14 +206,6 @@ const AdminCategoryPage: React.FC = () => {
               rules={[{ required: true, message: "Please enter the category name!" }]}
             >
               <Input placeholder="Enter category name" />
-            </Form.Item>
-
-            <Form.Item
-              label="Image URL"
-              name="image"
-              rules={[{ required: true, message: "Please enter the image URL!" }]}
-            >
-              <Input placeholder="Enter image URL" />
             </Form.Item>
 
             <div className="flex justify-end">
