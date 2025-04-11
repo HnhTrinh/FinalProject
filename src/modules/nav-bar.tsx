@@ -6,10 +6,11 @@ import {
   ShoppingCartOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
 import { logout } from "../redux/user";
+import { useEffect, useState } from "react";
 
 const Navbar = () => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -18,6 +19,26 @@ const Navbar = () => {
   );
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
+  const [current, setCurrent] = useState('home');
+
+  // Update current menu item based on location
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (pathname === '/') {
+      setCurrent('home');
+    } else if (pathname.startsWith('/products')) {
+      setCurrent('products');
+    } else if (pathname.startsWith('/contact')) {
+      setCurrent('contact');
+    } else if (pathname.startsWith('/cart')) {
+      setCurrent('cart');
+    } else if (pathname.startsWith('/login')) {
+      setCurrent('login');
+    } else if (pathname.startsWith('/register')) {
+      setCurrent('register');
+    }
+  }, [location]);
 
   const totalItems = cartItems.reduce(
     (total, item) => total + item.quantity,
@@ -38,7 +59,7 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <Menu mode="horizontal" className="flex justify-between">
+        <Menu mode="horizontal" className="flex justify-between" selectedKeys={[current]}>
           <Menu.Item key="logo" className="font-bold text-lg">
             <Link to="/">Mobile Shop</Link>
           </Menu.Item>
