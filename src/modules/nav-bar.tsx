@@ -107,12 +107,12 @@ const Navbar = () => {
     localStorage.clear();
 
     // Cập nhật trạng thái đăng nhập và thông tin người dùng
-    setIsAuthenticated(false);
-    setUser(null);
+    // setIsAuthenticated(false);
+    // setUser(null);
     setCartItemCount(0);
 
     // Chuyển hướng về trang chủ
-    navigate("/");
+    navigate("/login");
 
     // Hiển thị thông báo đăng xuất thành công
     toast.success("Đăng xuất thành công");
