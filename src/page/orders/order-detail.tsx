@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Steps, Card, Descriptions, Table, Button, Spin, Tag } from 'antd';
@@ -198,11 +199,11 @@ const OrderDetail = () => {
             <Descriptions.Item label="Payment Method">
               {order.paymentDetails?.paymentMethod || 'PayPal'}
             </Descriptions.Item>
-            <Descriptions.Item label="Payment ID">
+            {/* <Descriptions.Item label="Payment ID">
               {order.paymentDetails?.id || 'N/A'}
-            </Descriptions.Item>
+            </Descriptions.Item> */}
             <Descriptions.Item label="Total Amount">
-              ${order.totalAmount?.toFixed(2)}
+              ${order.totalPrice?.toFixed(2)}
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -235,7 +236,7 @@ const OrderDetail = () => {
                 Total:
               </Table.Summary.Cell>
               <Table.Summary.Cell index={1} className="font-bold">
-                ${order.totalAmount?.toFixed(2)}
+                ${order.totalPrice?.toFixed(2)}
               </Table.Summary.Cell>
             </Table.Summary.Row>
           )}

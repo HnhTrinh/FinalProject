@@ -15,9 +15,8 @@ const OrderList = () => {
       try {
         setLoading(true);
         const response = await orderAPI.getUserOrders();
-
         if (response.data?.success) {
-          setOrders(response.data.data || []);
+          setOrders(response.data.data.orders || []);
         } else {
           toast.error(response.data?.message || 'Failed to fetch orders');
         }
@@ -73,7 +72,7 @@ const OrderList = () => {
     },
     {
       title: 'Total',
-      dataIndex: 'totalAmount',
+      dataIndex: 'totalPrice',
       key: 'totalAmount',
       render: (amount: number) => `$${amount?.toFixed(2)}`,
     },
