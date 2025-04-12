@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 // import { products } from "../../constant/product";
 import { useEffect, useState } from "react";
-import { getProductsService } from "../../services/product";
+import { productAPI } from "../../services/api";
 import { toast } from "react-toastify";
 
 
@@ -10,11 +10,16 @@ const ProductListPage = () => {
   const [listProducts, setProducts] = useState([])
 
   const fetchProducts = async () => {
-    const resp = (await getProductsService())
-    if (resp.status !== 200) {
-      toast("Product cannot fetch")
+    try {
+      const resp = await productAPI.getAll()
+      if (resp.status !== 200) {
+        toast("Product cannot fetch")
+      }
+      setProducts(resp.data?.data || [])
+    } catch (error) {
+      console.error("Error fetching products:", error)
+      toast.error("Failed to fetch products")
     }
-    setProducts(resp.data?.data || [])
   }
   useEffect(() => {
     fetchProducts()

@@ -2,7 +2,7 @@
 
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { getProductsService } from '../services/product';
+import { productAPI } from '../services/api';
 import { toast } from 'react-toastify';
 
 const HomeContent = () => {
@@ -48,7 +48,7 @@ const HomeContent = () => {
     const fetchProducts = async () => {
       try {
         setLoadingProducts(true);
-        const response = await getProductsService();
+        const response = await productAPI.getAll();
 
         if (response.status === 200) {
           // Get all products from API

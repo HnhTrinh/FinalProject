@@ -2,7 +2,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { Carousel, Tabs } from "antd";
 import { useEffect, useState } from "react";
-import { getProductById } from "../../services/product";
+import { productAPI } from "../../services/api";
 import { toast } from "react-toastify";
 import { cartAPI } from "../../services/api";
 import { refreshCartCount } from "../../modules/nav-bar";
@@ -18,7 +18,7 @@ const ProductDetailsPage = () => {
   const fetchAPIProduct = async () => {
     try {
       setLoading(true)
-      const response = await getProductById(id || '')
+      const response = await productAPI.getById(id || '')
       if (response.status !== 200) {
         toast('Cannot fetch product detail')
         return
