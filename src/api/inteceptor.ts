@@ -23,15 +23,26 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response Interceptor (Optional)
+// Response Interceptor
 axiosInstance.interceptors.response.use(
   (response) => response, // Pass through successful responses
   (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized error (optional: redirect to login)
-      console.log("Unauthorized, redirecting to login...");
-      localStorage.removeItem("access_token"); // Remove token
-      window.location.href = "/login"; // Redirect to login page
+    if (error.response?.status === 401 ||
+        (error.response?.status === 400 && error.response?.data?.error === 'Token is not valid')) {
+      // Handle unauthorized error or invalid token
+      console.log("Token expired or invalid, clearing auth data...");
+
+      // Clear all localStorage items
+      localStorage.clear();
+
+      // Import toast from react-toastify
+      const { toast } = require('react-toastify');
+
+      // Show token expired message
+      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+
+      // Redirect to login page
+      window.location.href = "/login";
     }
 
     return Promise.reject(error); // Forward the error

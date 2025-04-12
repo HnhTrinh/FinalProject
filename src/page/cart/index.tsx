@@ -5,6 +5,8 @@ import { toast } from "react-toastify";
 import { cartAPI, authAPI } from "../../services/api";
 import { Button, Table, InputNumber, Empty, Spin } from "antd";
 import { DeleteOutlined, ShoppingOutlined } from "@ant-design/icons";
+import { refreshCartCount } from "../../modules/nav-bar";
+import PaymentModal from "../../components/PaymentModal";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
   // Kiểm tra xác thực và lấy dữ liệu giỏ hàng
   useEffect(() => {
@@ -48,7 +51,13 @@ const Cart = () => {
   // Tính tổng tiền khi cartItems hoặc selectedRowKeys thay đổi
   useEffect(() => {
     const total = cartItems
-      .filter(item => selectedRowKeys.includes(item._id))
+      .filter(item => {
+        // Chỉ tính tổng tiền cho các sản phẩm được chọn, còn tồn tại và còn hàng
+        const isSelected = selectedRowKeys.includes(item._id);
+        const exists = item.productExists !== false;
+        const inStock = item.productDetails && item.productDetails.amountInStore > 0;
+        return isSelected && exists && inStock;
+      })
       .reduce((sum, item) => {
         const price = item.productDetails?.price || 0;
         return sum + (price * item.quantity);
@@ -76,6 +85,9 @@ const Cart = () => {
           })
         );
         toast.success("Cập nhật giỏ hàng thành công");
+
+        // Cập nhật số lượng sản phẩm trong giỏ hàng ở navbar
+        refreshCartCount();
       } else {
         toast.error(response.data?.message || "Không thể cập nhật giỏ hàng");
       }
@@ -96,6 +108,9 @@ const Cart = () => {
         setCartItems(prev => prev.filter(item => item._id !== record._id));
         setSelectedRowKeys(prev => prev.filter(key => key !== record._id));
         toast.success("Đã xóa sản phẩm khỏi giỏ hàng");
+
+        // Cập nhật số lượng sản phẩm trong giỏ hàng ở navbar
+        refreshCartCount();
       } else {
         toast.error(response.data?.message || "Không thể xóa sản phẩm");
       }
@@ -110,7 +125,9 @@ const Cart = () => {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
     getCheckboxProps: (record) => ({
-      disabled: record.productExists === false,
+      // Disable checkbox nếu sản phẩm không tồn tại hoặc hết hàng
+      disabled: record.productExists === false ||
+                (record.productDetails && record.productDetails.amountInStore <= 0),
     }),
   };
 
@@ -122,9 +139,10 @@ const Cart = () => {
       key: 'productDetails',
       render: (productDetails, record) => {
         const productExists = record.productExists !== false;
+        const isOutOfStock = productDetails && productDetails.amountInStore <= 0;
 
         return (
-          <div className="flex items-center">
+          <div className={`flex items-center ${isOutOfStock ? 'opacity-60' : ''}`}>
             <img
               src={productDetails?.pictureURL || "https://via.placeholder.com/80x80"}
               alt={productDetails?.name}
@@ -134,6 +152,9 @@ const Cart = () => {
               <div className="font-medium">{productDetails?.name}</div>
               {!productExists && (
                 <div className="text-red-500 text-xs">Sản phẩm không còn tồn tại</div>
+              )}
+              {isOutOfStock && productExists && (
+                <div className="text-orange-500 text-xs">Sản phẩm đã hết hàng</div>
               )}
             </div>
           </div>
@@ -152,13 +173,14 @@ const Cart = () => {
       key: 'quantity',
       render: (quantity, record) => {
         const productExists = record.productExists !== false;
+        const isOutOfStock = record.productDetails && record.productDetails.amountInStore <= 0;
 
         return (
           <InputNumber
             min={1}
             value={quantity}
             onChange={(value) => handleQuantityChange(record, value)}
-            disabled={!productExists}
+            disabled={!productExists || isOutOfStock}
             className="w-16"
           />
         );
@@ -175,16 +197,21 @@ const Cart = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_, record) => (
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveItem(record)}
-        >
-          Xóa
-        </Button>
-      ),
+      render: (_, record) => {
+        const isOutOfStock = record.productDetails && record.productDetails.amountInStore <= 0;
+
+        return (
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleRemoveItem(record)}
+            className={isOutOfStock ? 'opacity-60' : ''}
+          >
+            Xóa
+          </Button>
+        );
+      },
     },
   ];
 
@@ -195,7 +222,8 @@ const Cart = () => {
       return;
     }
 
-    navigate("/checkout", { state: { selectedItems: selectedRowKeys } });
+    // Mở modal thanh toán
+    setPaymentModalVisible(true);
   };
 
   // Hiển thị trạng thái loading
@@ -266,6 +294,15 @@ const Cart = () => {
           </Button>
         </div>
       </div>
+
+      {/* Modal thanh toán PayPal */}
+      <PaymentModal
+        visible={paymentModalVisible}
+        onClose={() => setPaymentModalVisible(false)}
+        cartItems={cartItems}
+        totalAmount={totalPrice}
+        selectedItems={selectedRowKeys}
+      />
     </div>
   );
 };

@@ -36,12 +36,20 @@ const ProductListPage = () => {
             />
             <h3 className="mt-4 text-lg font-bold">{product.name}</h3>
             <p className="text-gray-600">{product.price}</p>
-            <Link
-              to={`/products/${product._id || product.id}`}
-              className="mt-2 inline-block px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all"
-            >
-              View Details
-            </Link>
+            <div className="mt-2">
+              <Link
+                to={`/products/${product._id || product.id}`}
+                className="inline-block px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all"
+              >
+                View Details
+              </Link>
+
+              {product.amountInStore <= 0 && (
+                <div className="mt-2 px-4 py-2 bg-gray-400 text-white rounded-full text-center">
+                  Out of Stock
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>

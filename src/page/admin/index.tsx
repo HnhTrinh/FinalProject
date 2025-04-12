@@ -253,100 +253,116 @@ const AdminPage = () => {
           open={isModalVisible}
           onCancel={handleModalClose}
           footer={null}
-          width={600}
+          width={800}
         >
           <Form
             form={form}
             onFinish={handleSaveProduct}
             layout="vertical"
           >
-            <Form.Item
-              label="Product Name"
-              name="name"
-              rules={[{ required: true, message: "Please enter the product name!" }]}
-            >
-              <Input placeholder="Enter product name" />
-            </Form.Item>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Left Column */}
+              <div>
+                <Form.Item
+                  label="Product Name"
+                  name="name"
+                  rules={[{ required: true, message: "Please enter the product name!" }]}
+                >
+                  <Input placeholder="Enter product name" />
+                </Form.Item>
 
-            <Form.Item
-              label="Product Price"
-              name="price"
-              rules={[{ required: true, message: "Please enter the product price!" }]}
-            >
-              <Input type="number" min={0} placeholder="Enter product price" />
-            </Form.Item>
+                <Form.Item
+                  label="Product Price"
+                  name="price"
+                  rules={[{ required: true, message: "Please enter the product price!" }]}
+                >
+                  <Input type="number" min={0} placeholder="Enter product price" />
+                </Form.Item>
 
-            <Form.Item
-              label="Product Description"
-              name="description"
-              rules={[{ required: true, message: "Please enter the product description!" }]}
-            >
-              <Input.TextArea rows={4} placeholder="Enter product description" />
-            </Form.Item>
+                <Form.Item
+                  label="Amount In Store"
+                  name="amountInStore"
+                  rules={[{ required: true, message: "Please enter the amount in store!" }]}
+                >
+                  <Input type="number" min={0} placeholder="Enter amount in store" />
+                </Form.Item>
 
-            <Form.Item
-              label="Product Features"
-              name="features"
-              rules={[{ required: true, message: "Please enter the product features!" }]}
-            >
-              <Input.TextArea
-                rows={4}
-                placeholder="Enter product features (comma separated)"
-              />
-            </Form.Item>
+                <Form.Item
+                  label="Category"
+                  name="category"
+                  rules={[{ required: true, message: "Please select the product category!" }]}
+                >
+                  <Select
+                    placeholder="Select product category"
+                    loading={loadingCategories}
+                    options={categories.map(cat => ({
+                      value: cat._id || cat.id,
+                      label: cat.name
+                    }))}
+                  />
+                </Form.Item>
+              </div>
 
-            <Form.Item
-              label="Category"
-              name="category"
-              rules={[{ required: true, message: "Please select the product category!" }]}
-            >
-              <Select
-                placeholder="Select product category"
-                loading={loadingCategories}
-                options={categories.map(cat => ({
-                  value: cat._id || cat.id,
-                  label: cat.name
-                }))}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Product Image"
-              name="imageUrl"
-              rules={[{ required: imageUrl ? false : true, message: "Please upload an image!" }]}
-            >
-              <Upload
-                name="file"
-                listType="picture-card"
-                showUploadList={false}
-                accept="image/jpeg,image/png,image/gif"
-                customRequest={handleImageUpload}
-              >
-                {imageUrl ? (
-                  <img src={imageUrl} alt="product" className="w-20 h-20 object-cover rounded" />
-                ) : uploading ? (
-                  <div>
-                    <LoadingOutlined />
-                    <div>Uploading...</div>
+              {/* Right Column */}
+              <div>
+                <Form.Item
+                  label="Product Image"
+                  name="imageUrl"
+                  rules={[{ required: imageUrl ? false : true, message: "Please upload an image!" }]}
+                >
+                  <div className="flex flex-col items-center">
+                    <Upload
+                      name="file"
+                      listType="picture-card"
+                      showUploadList={false}
+                      accept="image/jpeg,image/png,image/gif"
+                      customRequest={handleImageUpload}
+                    >
+                      {imageUrl ? (
+                        <img src={imageUrl} alt="product" className="w-full h-full object-cover rounded" />
+                      ) : uploading ? (
+                        <div>
+                          <LoadingOutlined />
+                          <div>Uploading...</div>
+                        </div>
+                      ) : (
+                        <div>
+                          <PlusOutlined />
+                          <div>Upload</div>
+                        </div>
+                      )}
+                    </Upload>
+                    {imageUrl && (
+                      <p className="text-sm text-gray-500 mt-2">Click image to change</p>
+                    )}
                   </div>
-                ) : (
-                  <div>
-                    <PlusOutlined />
-                    <div>Upload</div>
-                  </div>
-                )}
-              </Upload>
-            </Form.Item>
+                </Form.Item>
+              </div>
 
-            <Form.Item
-              label="Amount In Store"
-              name="amountInStore"
-              rules={[{ required: true, message: "Please enter the amount in store!" }]}
-            >
-              <Input type="number" min={0} placeholder="Enter amount in store" />
-            </Form.Item>
+              {/* Full Width Fields */}
+              <div className="col-span-2">
+                <Form.Item
+                  label="Product Description"
+                  name="description"
+                  rules={[{ required: true, message: "Please enter the product description!" }]}
+                >
+                  <Input.TextArea rows={4} placeholder="Enter product description" />
+                </Form.Item>
 
-            <div className="flex justify-end">
+                <Form.Item
+                  label="Product Features"
+                  name="features"
+                  rules={[{ required: true, message: "Please enter the product features!" }]}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Enter product features (comma separated)"
+                  />
+                </Form.Item>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4">
               <Button onClick={handleModalClose} className="mr-3">
                 Cancel
               </Button>

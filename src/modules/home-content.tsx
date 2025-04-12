@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getProductsService } from '../services/product';
@@ -187,10 +189,16 @@ const HomeContent = () => {
                     <p className="text-gray-800 font-bold mb-4">${(product.price || 0).toFixed(2)}</p>
                     <Link
                       to={`/products/${product._id || product.id}`}
-                      className="block text-center bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
+                      className="block text-center bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors mb-2"
                     >
                       View Details
                     </Link>
+
+                    {product.amountInStore <= 0 && (
+                      <div className="block text-center bg-gray-400 text-white py-2 rounded-md mt-2">
+                        Out of Stock
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { getProductById } from "../../services/product";
 import { toast } from "react-toastify";
 import { cartAPI } from "../../services/api";
+import { refreshCartCount } from "../../modules/nav-bar";
+
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
@@ -95,7 +97,6 @@ const ProductDetailsPage = () => {
 
   const handleAddToCart = async () => {
     try {
-
       // Lấy productId từ dữ liệu sản phẩm
       const productId = product._id || product.id;
       if (!productId) {
@@ -112,13 +113,37 @@ const ProductDetailsPage = () => {
       // Kiểm tra kết quả trả về từ API
       if (response.data && response.data.success) {
         toast.success("Product added to cart successfully");
+
+        // Cập nhật số lượng sản phẩm trong giỏ hàng ở navbar
+        refreshCartCount();
       } else {
-        toast.error(response.data?.message || "Failed to add product to cart");
+        // Hiển thị thông báo lỗi từ response.data
+        const errorMessage = response.data?.error || response.data?.message || "Failed to add product to cart";
+        toast.error(errorMessage);
       }
     }
     catch (err) {
       console.error("Error adding to cart:", err);
-      toast.error("Failed to add product to cart");
+
+      // Kiểm tra nếu lỗi có response từ server
+      if (err.response) {
+        const responseData = err.response.data;
+
+        // Hiển thị thông báo lỗi từ server
+        if (responseData.error) {
+          toast.error(responseData.error);
+        } else if (responseData.message) {
+          toast.error(responseData.message);
+        } else {
+          toast.error(`Error (${err.response.status}): Failed to add product to cart`);
+        }
+      } else if (err.message) {
+        // Hiển thị thông báo lỗi từ axios
+        toast.error(err.message);
+      } else {
+        // Thông báo lỗi mặc định
+        toast.error("Failed to add product to cart");
+      }
     }
   };
 
@@ -169,12 +194,20 @@ const ProductDetailsPage = () => {
 
             {/* Call-to-Action Buttons */}
             <div className="flex gap-4">
-              <button className="px-6 py-3 bg-blue-500 text-white font-bold text-lg rounded-lg hover:bg-blue-600 hover:scale-105 transform transition-all" onClick={handleBuyNow}>
-                Buy Now
-              </button>
-              <button className="px-6 py-3 bg-gray-100 text-gray-800 font-bold text-lg rounded-lg hover:bg-gray-200 hover:scale-105 transform transition-all" onClick={handleAddToCart}>
-                Add to Cart
-              </button>
+              {product.amountInStore > 0 ? (
+                <>
+                  <button className="px-6 py-3 bg-blue-500 text-white font-bold text-lg rounded-lg hover:bg-blue-600 hover:scale-105 transform transition-all" onClick={handleBuyNow}>
+                    Buy Now
+                  </button>
+                  <button className="px-6 py-3 bg-gray-100 text-gray-800 font-bold text-lg rounded-lg hover:bg-gray-200 hover:scale-105 transform transition-all" onClick={handleAddToCart}>
+                    Add to Cart
+                  </button>
+                </>
+              ) : (
+                <button className="px-6 py-3 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed" disabled>
+                  Out of Stock
+                </button>
+              )}
             </div>
           </div>
         </div>

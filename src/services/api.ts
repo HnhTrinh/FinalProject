@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const axiosInstance = axios.create({
+// Export axiosInstance để có thể sử dụng ở các file khác
+export const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_API_URL,
   timeout: 10000,
   headers: {
@@ -52,6 +53,25 @@ axiosInstance.interceptors.response.use(
       message: error.message,
       response: error.response?.data
     });
+
+    // Xử lý lỗi token hết hạn (401 Unauthorized) hoặc token không hợp lệ (400)
+    if (error.response?.status === 401 ||
+        (error.response?.status === 400 && error.response?.data?.error === 'Token is not valid')) {
+      console.log('Token expired or invalid, clearing auth data...');
+
+      // Xóa toàn bộ localStorage
+      localStorage.clear();
+
+      // Import toast từ react-toastify
+      const { toast } = require('react-toastify');
+
+      // Hiển thị thông báo token hết hạn
+      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+
+      // Chuyển hướng về trang đăng nhập
+      window.location.href = "/login";
+    }
+
     return Promise.reject(error);
   }
 );
@@ -116,6 +136,44 @@ export const cartAPI = {
   removeCartItem: (productId: any) => {
     return axiosInstance.delete('/cart', { data: { productId } });
   }
+};
+
+// Order APIs
+export const orderAPI = {
+  // Tạo đơn hàng mới
+  createOrder: (orderData: any) => {
+    return axiosInstance.post('/orders', orderData);
+  },
+
+  // Lấy thông tin đơn hàng theo ID
+  getOrderById: (orderId: string) => {
+    return axiosInstance.get(`/orders/${orderId}`);
+  },
+
+  // Lấy danh sách đơn hàng của người dùng
+  getUserOrders: () => {
+    return axiosInstance.get('/orders/user');
+  },
+
+  // Cập nhật trạng thái đơn hàng
+  updateOrderStatus: (orderId: string, status: string) => {
+    return axiosInstance.put(`/orders/${orderId}/status`, { status });
+  },
+
+  // Xác nhận thanh toán PayPal
+  verifyPayPalPayment: (paymentData: any) => {
+    return axiosInstance.post('/orders/verify-payment', paymentData);
+  }
+};
+
+// Định nghĩa các trạng thái đơn hàng
+export const ORDER_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  SHIPPED: 'shipped',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+  PAYMENT_FAILED: 'payment_failed'
 };
 
 // User APIs

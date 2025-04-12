@@ -19,14 +19,22 @@ import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import OrderList from './page/orders'
+import OrderDetail from './page/orders/order-detail'
+import { PayPalScriptProvider } from '@paypal/react-paypal-js'
 
 function App() {
   return (
     <Provider store={store}>
-      <BrowserRouter>
-        <AuthInitializer />
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-        <Routes>
+      <PayPalScriptProvider options={{
+        clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
+        currency: "USD",
+        intent: "capture"
+      }}>
+        <BrowserRouter>
+          <AuthInitializer />
+          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+          <Routes>
           {/* Public routes - chỉ truy cập khi chưa đăng nhập */}
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<LoginPage />} />
@@ -43,6 +51,8 @@ function App() {
               <Route path="/checkout/:id" element={<Checkout />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/orders" element={<OrderList />} />
+              <Route path="/orders/:id" element={<OrderDetail />} />
             </Route>
           </Route>
 
@@ -54,8 +64,9 @@ function App() {
 
           {/* 404 route */}
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </PayPalScriptProvider>
     </Provider>
   )
 }
