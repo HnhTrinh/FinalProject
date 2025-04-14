@@ -58,16 +58,27 @@ const PaymentModal = ({
 
       // Gọi API tạo đơn hàng
       const response = await orderAPI.createOrder(orderData);
+      console.log('Order response:', response.data);
 
       if (response.data?.success) {
         toast.success('Order placed successfully!');
 
-        // Chuyển hướng đến trang theo dõi đơn hàng
-        navigate(`/orders/${response.data.data._id}`, {
-          state: {
-            orderDetails: response.data.data,
-            paymentDetails: details
-          }
+        // Lấy ID đơn hàng từ response
+        // Kiểm tra cấu trúc dữ liệu trả về để lấy ID đơn hàng chính xác
+        const orderId = response.data.data.order?._id ||
+          response.data.data.invoice?.order ||
+          (typeof response.data.data.order === 'string' ? response.data.data.order : null);
+        console.log("hand pay", orderId)
+
+        if (!orderId) {
+          console.error('Order ID not found in response:', response.data);
+          toast.warning('Order created but ID not found. Please check your orders page.');
+          navigate('/orders');
+          onClose();
+          return;
+        }
+
+        navigate(`/orders`, {
         });
 
         // Đóng modal

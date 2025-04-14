@@ -138,6 +138,16 @@ export const cartAPI = {
   }
 };
 
+// Order Status Constants
+export const ORDER_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  SHIPPED: 'shipped',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+  PAYMENT_FAILED: 'payment_failed'
+};
+
 // Order APIs
 export const orderAPI = {
   // Tạo đơn hàng mới
@@ -160,21 +170,48 @@ export const orderAPI = {
     return axiosInstance.put(`/orders/${orderId}/status`, { status });
   },
 
+  // Admin: Lấy tất cả đơn hàng (chỉ admin mới có quyền)
+  getAllOrders: () => {
+    return axiosInstance.get('/orders');
+  },
+
+  // Admin: Cập nhật thông tin đơn hàng
+  updateOrderDetails: (orderId: string, orderData: any) => {
+    return axiosInstance.put(`/orders/${orderId}`, orderData);
+  },
+
+  // Admin: Cập nhật thông tin vận chuyển
+  updateOrderTracking: (orderId: string, trackingData: any) => {
+    return axiosInstance.put(`/orders/${orderId}/tracking`, trackingData);
+  },
+
+  // Admin: Gửi email thông báo cho khách hàng
+  sendOrderNotification: (orderId: string) => {
+    return axiosInstance.post(`/orders/${orderId}/notify`);
+  },
+
+  // Admin: Hủy đơn hàng
+  cancelOrder: (orderId: string, reason: string) => {
+    return axiosInstance.put(`/orders/${orderId}/cancel`, { reason });
+  },
+
+  // Admin: Lấy thống kê đơn hàng
+  getOrderStats: () => {
+    return axiosInstance.get('/orders/stats');
+  },
+
+  // Tìm kiếm đơn hàng với các bộ lọc
+  searchOrders: (filters: any) => {
+    return axiosInstance.get('/orders/search', { params: filters });
+  },
+
   // Xác nhận thanh toán PayPal
   verifyPayPalPayment: (paymentData: any) => {
     return axiosInstance.post('/orders/verify-payment', paymentData);
   }
 };
 
-// Định nghĩa các trạng thái đơn hàng
-export const ORDER_STATUS = {
-  PENDING: 'pending',
-  PROCESSING: 'processing',
-  SHIPPED: 'shipped',
-  DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
-  PAYMENT_FAILED: 'payment_failed'
-};
+
 
 // User APIs
 export const userAPI = {

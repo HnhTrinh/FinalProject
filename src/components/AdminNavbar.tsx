@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Menu, Button, Dropdown } from 'antd';
-import { UserOutlined, LogoutOutlined, AppstoreOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, AppstoreOutlined, ShoppingOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 
 interface UserInfo {
@@ -44,6 +44,10 @@ const AdminNavbar: React.FC = () => {
 
           <Menu.Item key="categories" icon={<AppstoreOutlined />}>
             <Link to="/admin/category">Categories</Link>
+          </Menu.Item>
+
+          <Menu.Item key="orders" icon={<ShoppingCartOutlined />}>
+            <Link to="/admin/orders">Orders</Link>
           </Menu.Item>
 
           <Menu.Item key="store">

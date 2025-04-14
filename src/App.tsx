@@ -21,6 +21,8 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import OrderList from './page/orders'
 import OrderDetail from './page/orders/order-detail'
+import AdminOrdersPage from './page/admin/orders'
+import AdminOrderDetail from './page/admin/orders/order-detail'
 import { PayPalScriptProvider } from '@paypal/react-paypal-js'
 
 function App() {
@@ -60,6 +62,8 @@ function App() {
           <Route element={<ProtectedRoute requireAdmin={true} />}>
             <Route path="/admin/product" element={<AdminPage />} />
             <Route path="/admin/category" element={<AdminCategoryPage />} />
+            <Route path="/admin/orders" element={<AdminOrdersPage />} />
+            <Route path="/admin/orders/:id" element={<AdminOrderDetail />} />
           </Route>
 
           {/* 404 route */}
