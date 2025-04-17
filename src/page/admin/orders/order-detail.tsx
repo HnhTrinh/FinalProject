@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Card, Descriptions, Table, Button, Spin, Tag, Input, Form, Modal, message, Timeline, Divider, Steps, Row, Col, Select
+import {
+  Card, Descriptions, Table, Button, Spin, Tag, Input, Form, Modal, message, Timeline, Divider, Steps, Row, Col, Select, Image, Typography
 } from 'antd';
-import { 
-  ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined, 
+import {
+  ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined,
   CloseCircleOutlined, EditOutlined, SaveOutlined, PrinterOutlined,
   MailOutlined, UserOutlined
 } from '@ant-design/icons';
@@ -35,18 +35,18 @@ const AdminOrderDetail = () => {
     try {
       setLoading(true);
       const response = await orderAPI.getOrderById(id || '');
-      
+
       if (response.data?.success) {
         setOrder(response.data.data);
         setCurrentStepFromStatus(response.data.data.status);
-        
+
         // Set form values
         form.setFieldsValue({
           customerName: response.data.data.shippingAddress?.name,
           address: response.data.data.shippingAddress?.address,
           notes: response.data.data.notes || '',
         });
-        
+
         // Set tracking form values if available
         if (response.data.data.trackingNumber) {
           trackingForm.setFieldsValue({
@@ -56,7 +56,7 @@ const AdminOrderDetail = () => {
           });
         }
       } else {
-        message.error('Failed to fetch order details');
+        message.error(response.data?.message || 'Failed to fetch order details');
       }
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -95,7 +95,7 @@ const AdminOrderDetail = () => {
     try {
       // Trong thực tế, bạn cần tạo API này
       const response = await orderAPI.updateOrderStatus(id || '', newStatus);
-      
+
       if (response.data?.success) {
         message.success(`Order status updated to ${newStatus.toUpperCase()}`);
         fetchOrderDetails(); // Refresh order data
@@ -113,7 +113,7 @@ const AdminOrderDetail = () => {
     try {
       // Trong thực tế, bạn cần tạo API này
       const response = await orderAPI.updateOrderTracking(id || '', values);
-      
+
       if (response.data?.success) {
         message.success('Tracking information updated');
         setTrackingModalVisible(false);
@@ -131,7 +131,7 @@ const AdminOrderDetail = () => {
   const handleSaveChanges = async () => {
     try {
       const values = await form.validateFields();
-      
+
       // Trong thực tế, bạn cần tạo API này
       const response = await orderAPI.updateOrderDetails(id || '', {
         shippingAddress: {
@@ -140,7 +140,7 @@ const AdminOrderDetail = () => {
         },
         notes: values.notes,
       });
-      
+
       if (response.data?.success) {
         message.success('Order details updated');
         setEditMode(false);
@@ -159,7 +159,7 @@ const AdminOrderDetail = () => {
     try {
       // Trong thực tế, bạn cần tạo API này
       const response = await orderAPI.sendOrderNotification(id || '');
-      
+
       if (response.data?.success) {
         message.success('Notification email sent to customer');
       } else {
@@ -188,15 +188,29 @@ const AdminOrderDetail = () => {
   const columns = [
     {
       title: 'Product',
-      dataIndex: 'product',
+      dataIndex: 'name',
       key: 'product',
-      render: (product: any) => product?.name || 'Unknown Product',
+      render: (name: string, record: any) => (
+        <div className="flex items-center">
+          {record.pictureURL && (
+            <Image
+              src={record.pictureURL}
+              alt={name}
+              width={50}
+              height={50}
+              className="object-cover rounded mr-3"
+              preview={false}
+            />
+          )}
+          <span>{name || (record.product?.name) || 'Unknown Product'}</span>
+        </div>
+      ),
     },
     {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `$${price.toFixed(2)}`,
+      render: (price: number) => `$${(price || 0).toFixed(2)}`,
     },
     {
       title: 'Quantity',
@@ -206,7 +220,7 @@ const AdminOrderDetail = () => {
     {
       title: 'Total',
       key: 'total',
-      render: (record: any) => `$${(record.price * record.quantity).toFixed(2)}`,
+      render: (record: any) => `$${((record.price || 0) * (record.quantity || 1)).toFixed(2)}`,
     },
   ];
 
@@ -251,16 +265,16 @@ const AdminOrderDetail = () => {
             <Button onClick={() => navigate('/admin/orders')}>
               Back to Orders
             </Button>
-            <Button 
-              type="primary" 
-              icon={<PrinterOutlined />} 
+            <Button
+              type="primary"
+              icon={<PrinterOutlined />}
               onClick={() => window.print()}
             >
               Print
             </Button>
-            <Button 
-              type="primary" 
-              icon={<MailOutlined />} 
+            <Button
+              type="primary"
+              icon={<MailOutlined />}
               onClick={handleSendNotification}
             >
               Notify Customer
@@ -284,7 +298,7 @@ const AdminOrderDetail = () => {
               <Option value={ORDER_STATUS.CANCELLED}>Cancelled</Option>
             </Select>
           </div>
-          
+
           {currentStep >= 0 ? (
             <Steps
               current={currentStep}
@@ -331,13 +345,13 @@ const AdminOrderDetail = () => {
         {/* Order Details */}
         <Row gutter={16} className="mb-6">
           <Col span={12}>
-            <Card 
+            <Card
               title={
                 <div className="flex justify-between items-center">
                   <span>Customer Information</span>
-                  <Button 
-                    type="text" 
-                    icon={editMode ? <SaveOutlined /> : <EditOutlined />} 
+                  <Button
+                    type="text"
+                    icon={editMode ? <SaveOutlined /> : <EditOutlined />}
                     onClick={() => {
                       if (editMode) {
                         handleSaveChanges();
@@ -393,14 +407,14 @@ const AdminOrderDetail = () => {
               )}
             </Card>
           </Col>
-          
+
           <Col span={12}>
-            <Card 
+            <Card
               title={
                 <div className="flex justify-between items-center">
                   <span>Order & Payment Information</span>
                   {order.status === ORDER_STATUS.PROCESSING && (
-                    <Button 
+                    <Button
                       type="primary"
                       onClick={() => setTrackingModalVisible(true)}
                     >
@@ -446,7 +460,14 @@ const AdminOrderDetail = () => {
         </Row>
 
         {/* Order Items */}
-        <Card title="Order Items" className="mb-6">
+        <Card
+          title={
+            <div className="flex justify-between items-center">
+              <span>Order Items</span>
+              <Typography.Text strong>Total: ${order.totalPrice?.toFixed(2)}</Typography.Text>
+            </div>
+          }
+          className="mb-6">
           <Table
             dataSource={order.items}
             columns={columns}
@@ -458,7 +479,7 @@ const AdminOrderDetail = () => {
                   Total:
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} className="font-bold">
-                  ${order.totalAmount?.toFixed(2)}
+                  ${order.totalPrice?.toFixed(2)}
                 </Table.Summary.Cell>
               </Table.Summary.Row>
             )}
@@ -470,7 +491,7 @@ const AdminOrderDetail = () => {
           {order.statusHistory ? (
             <Timeline mode="left">
               {order.statusHistory.map((history: any, index: number) => (
-                <Timeline.Item 
+                <Timeline.Item
                   key={index}
                   color={getStatusTagColor(history.status)}
                   label={new Date(history.timestamp).toLocaleString()}
@@ -482,7 +503,7 @@ const AdminOrderDetail = () => {
             </Timeline>
           ) : (
             <Timeline mode="left">
-              <Timeline.Item 
+              <Timeline.Item
                 color={getStatusTagColor(order.status)}
                 label={new Date(order.createdAt).toLocaleString()}
               >

@@ -162,7 +162,7 @@ export const orderAPI = {
 
   // Lấy danh sách đơn hàng của người dùng
   getUserOrders: () => {
-    return axiosInstance.get('/orders/user');
+    return axiosInstance.get('/orders');
   },
 
   // Cập nhật trạng thái đơn hàng

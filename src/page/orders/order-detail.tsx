@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Steps, Card, Descriptions, Table, Button, Spin, Tag } from 'antd';
-import { ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Steps, Card, Descriptions, Table, Button, Spin, Tag, Image, Typography, Divider, Alert } from 'antd';
+import { ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined, CloseCircleOutlined, ArrowLeftOutlined, PrinterOutlined } from '@ant-design/icons';
 import { orderAPI, ORDER_STATUS } from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -14,26 +14,19 @@ const OrderDetail = () => {
   const [order, setOrder] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // Lấy thông tin đơn hàng từ state hoặc API
+  // Lấy thông tin đơn hàng từ API
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
         setLoading(true);
-
-        // Nếu có dữ liệu từ state, sử dụng nó
-        if (location.state?.orderDetails) {
-          setOrder(location.state.orderDetails);
-          setCurrentStepFromStatus(location.state.orderDetails.status);
-        }
-        // Nếu không, gọi API để lấy dữ liệu
-        else if (id) {
+        if (id) {
           const response = await orderAPI.getOrderById(id);
 
           if (response.data?.success) {
             setOrder(response.data.data);
             setCurrentStepFromStatus(response.data.data.status);
           } else {
-            toast.error('Failed to fetch order details');
+            toast.error(response.data?.message || 'Failed to fetch order details');
           }
         }
       } catch (error) {
@@ -45,7 +38,7 @@ const OrderDetail = () => {
     };
 
     fetchOrderDetails();
-  }, [id, location.state]);
+  }, [id]);
 
   // Chuyển đổi trạng thái đơn hàng thành step hiện tại
   const setCurrentStepFromStatus = (status: string) => {
@@ -94,9 +87,23 @@ const OrderDetail = () => {
   const columns = [
     {
       title: 'Product',
-      dataIndex: 'product',
+      dataIndex: 'name',
       key: 'product',
-      render: (product: any) => product?.name || 'Unknown Product',
+      render: (name: string, record: any) => (
+        <div className="flex items-center">
+          {record.pictureURL && (
+            <Image
+              src={record.pictureURL}
+              alt={name}
+              width={50}
+              height={50}
+              className="object-cover rounded mr-3"
+              preview={false}
+            />
+          )}
+          <span>{name || 'Unknown Product'}</span>
+        </div>
+      ),
     },
     {
       title: 'Price',
@@ -139,7 +146,16 @@ const OrderDetail = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Order #{order._id}</h1>
+        <div className="flex items-center">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/orders')}
+            className="mr-4"
+          >
+            Back to Orders
+          </Button>
+          <h1 className="text-2xl font-bold">Order #{order._id}</h1>
+        </div>
         <Tag color={getStatusTagColor(order.status)} className="text-base px-3 py-1">
           {order.status.toUpperCase()}
         </Tag>
@@ -190,46 +206,43 @@ const OrderDetail = () => {
         </Card>
       )}
 
-      {/* Order Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card title="Order Information" className="h-full">
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Order ID">{order._id}</Descriptions.Item>
-            <Descriptions.Item label="Date">{new Date(order.createdAt).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="Payment Method">
-              {order.paymentDetails?.paymentMethod || 'PayPal'}
-            </Descriptions.Item>
-            {/* <Descriptions.Item label="Payment ID">
-              {order.paymentDetails?.id || 'N/A'}
-            </Descriptions.Item> */}
-            <Descriptions.Item label="Total Amount">
-              ${order.totalPrice?.toFixed(2)}
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
+      {/* Order Summary */}
+      <Card className="mb-6">
+        <div className="flex flex-col md:flex-row justify-between">
+          <div className="mb-4 md:mb-0">
+            <Typography.Title level={5}>Order Summary</Typography.Title>
+            <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
+            <p><strong>Order Status:</strong> <Tag color={getStatusTagColor(order.status)}>{order.status.toUpperCase()}</Tag></p>
+            <p><strong>Payment Method:</strong> {order.paymentDetails?.paymentMethod || 'PayPal'}</p>
+            {order.paymentDetails?.id && (
+              <p><strong>Transaction ID:</strong> {order.paymentDetails.id}</p>
+            )}
+          </div>
 
-        <Card title="Shipping Information" className="h-full">
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Name">
-              {order.shippingAddress?.name || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Address">
-              {order.shippingAddress?.address || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email">
-              {order.paymentDetails?.payerEmail || 'N/A'}
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
-      </div>
+          <div>
+            <Typography.Title level={5}>Shipping Information</Typography.Title>
+            <p><strong>Name:</strong> {order.shippingAddress?.name || 'N/A'}</p>
+            <p><strong>Address:</strong> {order.shippingAddress?.address || 'N/A'}</p>
+            <p><strong>Email:</strong> {order.paymentDetails?.payerEmail || 'N/A'}</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Order Items */}
-      <Card title="Order Items" className="mb-6">
+      <Card
+        title={
+          <div className="flex justify-between items-center">
+            <span>Order Items</span>
+            <Typography.Text strong>Total: ${order.totalPrice?.toFixed(2)}</Typography.Text>
+          </div>
+        }
+        className="mb-6"
+      >
         <Table
           dataSource={order.items}
           columns={columns}
           pagination={false}
-          rowKey={(record) => record._id || record.productId}
+          rowKey={(record) => record._id || record.productId || record.product}
           summary={() => (
             <Table.Summary.Row>
               <Table.Summary.Cell index={0} colSpan={3} className="text-right font-bold">
@@ -243,13 +256,28 @@ const OrderDetail = () => {
         />
       </Card>
 
-      {/* Actions */}
-      <div className="flex justify-between">
-        <Button onClick={() => navigate('/orders')}>
-          Back to Orders
-        </Button>
+      {/* Tracking Information */}
+      {order.trackingNumber && (
+        <Card title="Tracking Information" className="mb-6">
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Tracking Number">{order.trackingNumber}</Descriptions.Item>
+            {order.carrier && <Descriptions.Item label="Carrier">{order.carrier}</Descriptions.Item>}
+            {order.estimatedDeliveryDate && (
+              <Descriptions.Item label="Estimated Delivery">
+                {new Date(order.estimatedDeliveryDate).toLocaleDateString()}
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      )}
 
-        <Button type="primary" onClick={() => window.print()}>
+      {/* Actions */}
+      <div className="flex justify-end">
+        <Button
+          type="primary"
+          icon={<PrinterOutlined />}
+          onClick={() => window.print()}
+        >
           Print Receipt
         </Button>
       </div>

@@ -35,16 +35,14 @@ const AdminOrdersPage = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      // Sử dụng API hiện có để lấy tất cả đơn hàng
-      // Trong thực tế, bạn cần tạo một API riêng cho admin để lấy tất cả đơn hàng
       const response = await orderAPI.getAllOrders();
-      if (response.data.data.success) {
-        const allOrders = response.data.data.orders;
+      if (response.data?.success) {
+        const allOrders = response.data.data || [];
         setOrders(allOrders);
         setFilteredOrders(allOrders);
         calculateStats(allOrders);
       } else {
-        message.error('Failed to fetch orders');
+        message.error(response.data?.message || 'Failed to fetch orders');
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -73,7 +71,7 @@ const AdminOrdersPage = () => {
       if (order.status === ORDER_STATUS.SHIPPED) stats.shipped++;
       if (order.status === ORDER_STATUS.DELIVERED) {
         stats.delivered++;
-        stats.revenue += order.totalAmount; // Only count completed orders for revenue
+        stats.revenue += order.totalPrice || 0; // Only count completed orders for revenue
       }
       if (order.status === ORDER_STATUS.CANCELLED) stats.cancelled++;
     });
@@ -84,21 +82,21 @@ const AdminOrdersPage = () => {
   // Apply filters
   useEffect(() => {
     let result = [...orders];
-    
+
     // Apply search filter
     if (searchText) {
-      result = result.filter(order => 
+      result = result.filter(order =>
         order._id.toLowerCase().includes(searchText.toLowerCase()) ||
         (order.shippingAddress?.name && order.shippingAddress.name.toLowerCase().includes(searchText.toLowerCase())) ||
         (order.paymentDetails?.payerEmail && order.paymentDetails.payerEmail.toLowerCase().includes(searchText.toLowerCase()))
       );
     }
-    
+
     // Apply status filter
     if (statusFilter !== 'all') {
       result = result.filter(order => order.status === statusFilter);
     }
-    
+
     // Apply date range filter
     if (dateRange && dateRange[0] && dateRange[1]) {
       const [startDate, endDate] = dateRange;
@@ -107,7 +105,7 @@ const AdminOrdersPage = () => {
         return orderDate >= startDate && orderDate <= endDate;
       });
     }
-    
+
     setFilteredOrders(result);
   }, [searchText, statusFilter, dateRange, orders]);
 
@@ -115,13 +113,13 @@ const AdminOrdersPage = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       const response = await orderAPI.updateOrderStatus(orderId, newStatus);
-      
+
       if (response.data?.success) {
         message.success(`Order status updated to ${newStatus.toUpperCase()}`);
-        
+
         // Update local state
-        setOrders(prevOrders => 
-          prevOrders.map(order => 
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
             order._id === orderId ? { ...order, status: newStatus } : order
           )
         );
@@ -176,10 +174,10 @@ const AdminOrdersPage = () => {
     },
     {
       title: 'Total',
-      dataIndex: 'totalAmount',
+      dataIndex: 'totalPrice',
       key: 'total',
-      render: amount => `$${amount.toFixed(2)}`,
-      sorter: (a, b) => a.totalAmount - b.totalAmount,
+      render: amount => `$${(amount || 0).toFixed(2)}`,
+      sorter: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0),
     },
     {
       title: 'Status',
@@ -196,8 +194,8 @@ const AdminOrdersPage = () => {
       key: 'actions',
       render: (_, record) => (
         <div className="flex space-x-2">
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             size="small"
             onClick={() => navigate(`/admin/orders/${record._id}`)}
           >
@@ -225,7 +223,7 @@ const AdminOrdersPage = () => {
       <AdminNavbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Order Management</h1>
-        
+
         {/* Statistics Cards */}
         <Row gutter={16} className="mb-6">
           <Col span={4}>
@@ -283,11 +281,12 @@ const AdminOrdersPage = () => {
                 prefix="$"
                 valueStyle={{ color: '#3f8600' }}
                 suffix={<DollarOutlined />}
+                formatter={(value) => `$${value.toFixed(2)}`}
               />
             </Card>
           </Col>
         </Row>
-        
+
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="flex flex-wrap gap-4 items-center">
@@ -298,7 +297,7 @@ const AdminOrdersPage = () => {
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 250 }}
             />
-            
+
             <Select
               placeholder="Filter by status"
               style={{ width: 150 }}
@@ -312,13 +311,13 @@ const AdminOrdersPage = () => {
               <Option value={ORDER_STATUS.DELIVERED}>Delivered</Option>
               <Option value={ORDER_STATUS.CANCELLED}>Cancelled</Option>
             </Select>
-            
-            <RangePicker 
+
+            <RangePicker
               onChange={dates => setDateRange(dates)}
             />
-            
-            <Button 
-              icon={<ReloadOutlined />} 
+
+            <Button
+              icon={<ReloadOutlined />}
               onClick={() => {
                 setSearchText('');
                 setStatusFilter('all');
@@ -330,7 +329,7 @@ const AdminOrdersPage = () => {
             </Button>
           </div>
         </div>
-        
+
         {/* Orders Table */}
         <div className="bg-white rounded-lg shadow">
           {loading ? (
