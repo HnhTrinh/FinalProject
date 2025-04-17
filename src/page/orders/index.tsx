@@ -16,6 +16,7 @@ const OrderList = () => {
         setLoading(true);
         const response = await orderAPI.getUserOrders();
         if (response.data?.success) {
+          console.log('Orders data:', response.data.data);
           setOrders(response.data.data || []);
         } else {
           toast.error(response.data?.message || 'Failed to fetch orders');
@@ -42,8 +43,8 @@ const OrderList = () => {
         return 'cyan';
       case ORDER_STATUS.DELIVERED:
         return 'green';
-      case ORDER_STATUS.CANCELLED:
-      case ORDER_STATUS.PAYMENT_FAILED:
+      case 'cancelled':
+      case 'payment_failed':
         return 'red';
       default:
         return 'default';
@@ -92,9 +93,9 @@ const OrderList = () => {
         { text: 'Processing', value: ORDER_STATUS.PROCESSING },
         { text: 'Shipped', value: ORDER_STATUS.SHIPPED },
         { text: 'Delivered', value: ORDER_STATUS.DELIVERED },
-        { text: 'Cancelled', value: ORDER_STATUS.CANCELLED },
+        { text: 'Completed', value: ORDER_STATUS.COMPLETED },
       ],
-      onFilter: (value: string, record: any) => record.status === value,
+      onFilter: (value: any, record: any) => record.status === value,
     },
     {
       title: 'Actions',

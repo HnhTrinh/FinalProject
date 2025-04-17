@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Descriptions, Table, Button, Spin, Tag, Input, Form, Modal, message, Timeline, Divider, Steps, Row, Col, Select, Image, Typography
+  Card, Descriptions, Table, Button, Spin, Tag, Input, Form, Modal, message, Timeline, Steps, Row, Col, Select, Image, Typography
 } from 'antd';
 import {
   ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined,
-  CloseCircleOutlined, EditOutlined, SaveOutlined, PrinterOutlined,
-  MailOutlined, UserOutlined
+  CloseCircleOutlined, EditOutlined, SaveOutlined, UserOutlined
 } from '@ant-design/icons';
 import { orderAPI, ORDER_STATUS } from '../../../services/api';
 import AdminNavbar from '../../../components/AdminNavbar';
 
 const { TextArea } = Input;
-const { Step } = Steps;
+
 const { Option } = Select;
 
 const AdminOrderDetail = () => {
@@ -37,22 +36,24 @@ const AdminOrderDetail = () => {
       const response = await orderAPI.getOrderById(id || '');
 
       if (response.data?.success) {
-        setOrder(response.data.data);
-        setCurrentStepFromStatus(response.data.data.status);
+        const orderData = response.data.data;
+        console.log('Order details:', orderData);
+        setOrder(orderData);
+        setCurrentStepFromStatus(orderData.status);
 
         // Set form values
         form.setFieldsValue({
-          customerName: response.data.data.shippingAddress?.name,
-          address: response.data.data.shippingAddress?.address,
-          notes: response.data.data.notes || '',
+          customerName: orderData.user?.name,
+          address: orderData.shippingAddress?.address,
+          notes: orderData.notes || '',
         });
 
         // Set tracking form values if available
-        if (response.data.data.trackingNumber) {
+        if (orderData.trackingNumber) {
           trackingForm.setFieldsValue({
-            trackingNumber: response.data.data.trackingNumber,
-            carrier: response.data.data.carrier,
-            estimatedDeliveryDate: response.data.data.estimatedDeliveryDate,
+            trackingNumber: orderData.trackingNumber,
+            carrier: orderData.carrier,
+            estimatedDeliveryDate: orderData.estimatedDeliveryDate,
           });
         }
       } else {
@@ -81,8 +82,8 @@ const AdminOrderDetail = () => {
       case ORDER_STATUS.DELIVERED:
         setCurrentStep(3);
         break;
-      case ORDER_STATUS.CANCELLED:
-      case ORDER_STATUS.PAYMENT_FAILED:
+      case 'cancelled':
+      case 'payment_failed':
         setCurrentStep(-1); // Trạng thái lỗi
         break;
       default:
@@ -154,22 +155,7 @@ const AdminOrderDetail = () => {
     }
   };
 
-  // Send notification email
-  const handleSendNotification = async () => {
-    try {
-      // Trong thực tế, bạn cần tạo API này
-      const response = await orderAPI.sendOrderNotification(id || '');
 
-      if (response.data?.success) {
-        message.success('Notification email sent to customer');
-      } else {
-        message.error(response.data?.message || 'Failed to send notification');
-      }
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      message.error('Failed to send notification');
-    }
-  };
 
   // Get color for status tag
   const getStatusTagColor = (status: string) => {
@@ -178,8 +164,8 @@ const AdminOrderDetail = () => {
       case ORDER_STATUS.PROCESSING: return 'orange';
       case ORDER_STATUS.SHIPPED: return 'cyan';
       case ORDER_STATUS.DELIVERED: return 'green';
-      case ORDER_STATUS.CANCELLED: return 'red';
-      case ORDER_STATUS.PAYMENT_FAILED: return 'red';
+      case 'cancelled': return 'red';
+      case 'payment_failed': return 'red';
       default: return 'default';
     }
   };
@@ -188,29 +174,35 @@ const AdminOrderDetail = () => {
   const columns = [
     {
       title: 'Product',
-      dataIndex: 'name',
+      dataIndex: ['product', 'name'],
       key: 'product',
-      render: (name: string, record: any) => (
-        <div className="flex items-center">
-          {record.pictureURL && (
-            <Image
-              src={record.pictureURL}
-              alt={name}
-              width={50}
-              height={50}
-              className="object-cover rounded mr-3"
-              preview={false}
-            />
-          )}
-          <span>{name || (record.product?.name) || 'Unknown Product'}</span>
-        </div>
-      ),
+      render: (name: string, record: any) => {
+        // In the updated API, product is an object with name, price, pictureURL
+        const productName = record.product?.name || 'Unknown Product';
+        const imageUrl = record.product?.pictureURL;
+
+        return (
+          <div className="flex items-center">
+            {imageUrl && (
+              <Image
+                src={imageUrl}
+                alt={productName}
+                width={50}
+                height={50}
+                className="object-cover rounded mr-3"
+                preview={false}
+              />
+            )}
+            <span>{productName}</span>
+          </div>
+        );
+      },
     },
     {
       title: 'Price',
-      dataIndex: 'price',
+      dataIndex: ['product', 'price'],
       key: 'price',
-      render: (price: number) => `$${(price || 0).toFixed(2)}`,
+      render: (price: number, record: any) => `$${(record.product?.price || 0).toFixed(2)}`,
     },
     {
       title: 'Quantity',
@@ -220,7 +212,7 @@ const AdminOrderDetail = () => {
     {
       title: 'Total',
       key: 'total',
-      render: (record: any) => `$${((record.price || 0) * (record.quantity || 1)).toFixed(2)}`,
+      render: (record: any) => `$${((record.product?.price || 0) * (record.quantity || 1)).toFixed(2)}`,
     },
   ];
 
@@ -261,23 +253,9 @@ const AdminOrderDetail = () => {
               {order.status.toUpperCase()}
             </Tag>
           </div>
-          <div className="flex space-x-2">
+          <div>
             <Button onClick={() => navigate('/admin/orders')}>
               Back to Orders
-            </Button>
-            <Button
-              type="primary"
-              icon={<PrinterOutlined />}
-              onClick={() => window.print()}
-            >
-              Print
-            </Button>
-            <Button
-              type="primary"
-              icon={<MailOutlined />}
-              onClick={handleSendNotification}
-            >
-              Notify Customer
             </Button>
           </div>
         </div>
@@ -295,7 +273,7 @@ const AdminOrderDetail = () => {
               <Option value={ORDER_STATUS.PROCESSING}>Processing</Option>
               <Option value={ORDER_STATUS.SHIPPED}>Shipped</Option>
               <Option value={ORDER_STATUS.DELIVERED}>Delivered</Option>
-              <Option value={ORDER_STATUS.CANCELLED}>Cancelled</Option>
+
             </Select>
           </div>
 
@@ -330,11 +308,11 @@ const AdminOrderDetail = () => {
               <div className="flex items-center text-red-600">
                 <CloseCircleOutlined className="text-xl mr-2" />
                 <span className="text-lg font-medium">
-                  {order.status === ORDER_STATUS.CANCELLED ? 'Order Cancelled' : 'Payment Failed'}
+                  {order.status === 'cancelled' ? 'Order Cancelled' : 'Payment Failed'}
                 </span>
               </div>
               <p className="text-gray-600 mt-2">
-                {order.status === ORDER_STATUS.CANCELLED
+                {order.status === 'cancelled'
                   ? 'This order has been cancelled.'
                   : 'There was an issue with your payment. Please try again or contact customer support.'}
               </p>
@@ -392,13 +370,13 @@ const AdminOrderDetail = () => {
               ) : (
                 <Descriptions column={1} bordered>
                   <Descriptions.Item label="Customer Name">
-                    {order.shippingAddress?.name || 'N/A'}
+                    {order.user?.name || 'N/A'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Email">
-                    {order.paymentDetails?.payerEmail || 'N/A'}
+                    {order.user?.email || 'N/A'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Shipping Address">
-                    {order.shippingAddress?.address || 'N/A'}
+                    {order.user?.address || 'N/A'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Order Notes">
                     {order.notes || 'No notes'}
@@ -472,7 +450,7 @@ const AdminOrderDetail = () => {
             dataSource={order.items}
             columns={columns}
             pagination={false}
-            rowKey={(record) => record._id || record.productId}
+            rowKey={(_, index) => `item-${index}`}
             summary={() => (
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={3} className="text-right font-bold">

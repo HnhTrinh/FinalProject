@@ -232,25 +232,29 @@ const Cart = () => {
   const onPayPalSuccess = async (details) => {
     try {
       setProcessingPayment(true);
-
-      // Lọc các sản phẩm được chọn để thanh toán
-      const selectedCartItems = cartItems.filter(item =>
-        selectedRowKeys.includes(item._id)
-      );
+      console.log('PayPal payment details:', details);
 
       // Xử lý thanh toán thành công với PayPal
-      const result = await handlePayPalSuccess(details, selectedCartItems, totalPrice);
+      // Theo API mới, backend sẽ tự động lấy dữ liệu từ giỏ hàng
+      const result = await handlePayPalSuccess(details);
 
       if (result.success) {
         // Đóng modal thanh toán
         setPaymentModalVisible(false);
+
+        // Hiển thị thông báo thành công
+        toast.success('Đơn hàng của bạn đã được tạo thành công!');
+
+        // Cập nhật số lượng sản phẩm trong giỏ hàng ở navbar
+        // Backend sẽ tự động xóa các sản phẩm trong giỏ hàng sau khi tạo đơn hàng
+        refreshCartCount();
 
         // Chuyển hướng đến trang đơn hàng
         navigate('/orders');
       }
     } catch (error) {
       console.error('Error processing payment:', error);
-      toast.error('Failed to process payment. Please try again.');
+      toast.error('Không thể xử lý thanh toán. Vui lòng thử lại.');
     } finally {
       setProcessingPayment(false);
     }

@@ -38,6 +38,7 @@ const AdminOrdersPage = () => {
       const response = await orderAPI.getAllOrders();
       if (response.data?.success) {
         const allOrders = response.data.data || [];
+        console.log('Admin orders data:', allOrders);
         setOrders(allOrders);
         setFilteredOrders(allOrders);
         calculateStats(allOrders);
@@ -73,7 +74,7 @@ const AdminOrdersPage = () => {
         stats.delivered++;
         stats.revenue += order.totalPrice || 0; // Only count completed orders for revenue
       }
-      if (order.status === ORDER_STATUS.CANCELLED) stats.cancelled++;
+      if (order.status === 'cancelled') stats.cancelled++;
     });
 
     setStats(stats);
@@ -139,8 +140,8 @@ const AdminOrdersPage = () => {
       case ORDER_STATUS.PROCESSING: return 'orange';
       case ORDER_STATUS.SHIPPED: return 'cyan';
       case ORDER_STATUS.DELIVERED: return 'green';
-      case ORDER_STATUS.CANCELLED: return 'red';
-      case ORDER_STATUS.PAYMENT_FAILED: return 'red';
+      case 'cancelled': return 'red';
+      case 'payment_failed': return 'red';
       default: return 'default';
     }
   };
@@ -155,15 +156,15 @@ const AdminOrdersPage = () => {
     },
     {
       title: 'Customer',
-      dataIndex: 'shippingAddress',
+      dataIndex: ['user', 'name'],
       key: 'customer',
-      render: address => address?.name || 'N/A',
+      render: (name, record) => name || record.user?.name || 'N/A',
     },
     {
       title: 'Email',
-      dataIndex: ['paymentDetails', 'payerEmail'],
+      dataIndex: ['user', 'email'],
       key: 'email',
-      render: email => email || 'N/A',
+      render: (email, record) => email || record.user?.email || 'N/A',
     },
     {
       title: 'Date',
@@ -197,12 +198,12 @@ const AdminOrdersPage = () => {
           <Button
             type="primary"
             size="small"
+            icon={<ShoppingOutlined />}
             onClick={() => navigate(`/admin/orders/${record._id}`)}
-          >
-            View
-          </Button>
+            title="View Order Details"
+          />
           <Select
-            defaultValue={record.status}
+            value={record.status}
             style={{ width: 120 }}
             onChange={(value) => handleStatusChange(record._id, value)}
             size="small"
@@ -211,7 +212,6 @@ const AdminOrdersPage = () => {
             <Option value={ORDER_STATUS.PROCESSING}>Processing</Option>
             <Option value={ORDER_STATUS.SHIPPED}>Shipped</Option>
             <Option value={ORDER_STATUS.DELIVERED}>Delivered</Option>
-            <Option value={ORDER_STATUS.CANCELLED}>Cancelled</Option>
           </Select>
         </div>
       ),
@@ -309,7 +309,7 @@ const AdminOrdersPage = () => {
               <Option value={ORDER_STATUS.PROCESSING}>Processing</Option>
               <Option value={ORDER_STATUS.SHIPPED}>Shipped</Option>
               <Option value={ORDER_STATUS.DELIVERED}>Delivered</Option>
-              <Option value={ORDER_STATUS.CANCELLED}>Cancelled</Option>
+
             </Select>
 
             <RangePicker

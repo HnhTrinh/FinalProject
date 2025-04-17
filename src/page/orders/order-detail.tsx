@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Steps, Card, Descriptions, Table, Button, Spin, Tag, Image, Typography, Divider, Alert } from 'antd';
-import { ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined, CloseCircleOutlined, ArrowLeftOutlined, PrinterOutlined } from '@ant-design/icons';
+import { ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined, CloseCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { orderAPI, ORDER_STATUS } from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -23,8 +23,10 @@ const OrderDetail = () => {
           const response = await orderAPI.getOrderById(id);
 
           if (response.data?.success) {
-            setOrder(response.data.data);
-            setCurrentStepFromStatus(response.data.data.status);
+            const orderData = response.data.data;
+            console.log('Order details:', orderData);
+            setOrder(orderData);
+            setCurrentStepFromStatus(orderData.status);
           } else {
             toast.error(response.data?.message || 'Failed to fetch order details');
           }
@@ -55,8 +57,8 @@ const OrderDetail = () => {
       case ORDER_STATUS.DELIVERED:
         setCurrentStep(3);
         break;
-      case ORDER_STATUS.CANCELLED:
-      case ORDER_STATUS.PAYMENT_FAILED:
+      case 'cancelled':
+      case 'payment_failed':
         setCurrentStep(-1); // Trạng thái lỗi
         break;
       default:
@@ -75,8 +77,8 @@ const OrderDetail = () => {
         return 'cyan';
       case ORDER_STATUS.DELIVERED:
         return 'green';
-      case ORDER_STATUS.CANCELLED:
-      case ORDER_STATUS.PAYMENT_FAILED:
+      case 'cancelled':
+      case 'payment_failed':
         return 'red';
       default:
         return 'default';
@@ -89,27 +91,33 @@ const OrderDetail = () => {
       title: 'Product',
       dataIndex: 'name',
       key: 'product',
-      render: (name: string, record: any) => (
-        <div className="flex items-center">
-          {record.pictureURL && (
-            <Image
-              src={record.pictureURL}
-              alt={name}
-              width={50}
-              height={50}
-              className="object-cover rounded mr-3"
-              preview={false}
-            />
-          )}
-          <span>{name || 'Unknown Product'}</span>
-        </div>
-      ),
+      render: (name: string, record: any) => {
+        // In the updated API, product is an object with name, price, pictureURL
+        const productName = record.product?.name || 'Unknown Product';
+        const imageUrl = record.product?.pictureURL;
+
+        return (
+          <div className="flex items-center">
+            {imageUrl && (
+              <Image
+                src={imageUrl}
+                alt={productName}
+                width={50}
+                height={50}
+                className="object-cover rounded mr-3"
+                preview={false}
+              />
+            )}
+            <span>{productName}</span>
+          </div>
+        );
+      },
     },
     {
       title: 'Price',
-      dataIndex: 'price',
+      dataIndex: ['product', 'price'],
       key: 'price',
-      render: (price: number) => `$${price.toFixed(2)}`,
+      render: (price: number, record: any) => `$${(record.product?.price || 0).toFixed(2)}`,
     },
     {
       title: 'Quantity',
@@ -119,7 +127,7 @@ const OrderDetail = () => {
     {
       title: 'Total',
       key: 'total',
-      render: (record: any) => `$${(record.price * record.quantity).toFixed(2)}`,
+      render: (record: any) => `$${((record.product?.price || 0) * (record.quantity || 1)).toFixed(2)}`,
     },
   ];
 
@@ -195,11 +203,11 @@ const OrderDetail = () => {
           <div className="flex items-center text-red-600">
             <CloseCircleOutlined className="text-xl mr-2" />
             <span className="text-lg font-medium">
-              {order.status === ORDER_STATUS.CANCELLED ? 'Order Cancelled' : 'Payment Failed'}
+              {order.status === 'cancelled' ? 'Order Cancelled' : 'Payment Failed'}
             </span>
           </div>
           <p className="text-gray-600 mt-2">
-            {order.status === ORDER_STATUS.CANCELLED
+            {order.status === 'cancelled'
               ? 'This order has been cancelled.'
               : 'There was an issue with your payment. Please try again or contact customer support.'}
           </p>
@@ -213,17 +221,18 @@ const OrderDetail = () => {
             <Typography.Title level={5}>Order Summary</Typography.Title>
             <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
             <p><strong>Order Status:</strong> <Tag color={getStatusTagColor(order.status)}>{order.status.toUpperCase()}</Tag></p>
-            <p><strong>Payment Method:</strong> {order.paymentDetails?.paymentMethod || 'PayPal'}</p>
-            {order.paymentDetails?.id && (
-              <p><strong>Transaction ID:</strong> {order.paymentDetails.id}</p>
+            <p><strong>Payment Method:</strong> PayPal</p>
+            {order.paymentDate && (
+              <p><strong>Payment Date:</strong> {new Date(order.paymentDate).toLocaleString()}</p>
             )}
           </div>
 
           <div>
             <Typography.Title level={5}>Shipping Information</Typography.Title>
-            <p><strong>Name:</strong> {order.shippingAddress?.name || 'N/A'}</p>
-            <p><strong>Address:</strong> {order.shippingAddress?.address || 'N/A'}</p>
-            <p><strong>Email:</strong> {order.paymentDetails?.payerEmail || 'N/A'}</p>
+            <p><strong>Name:</strong> {order.user?.name || 'N/A'}</p>
+            <p><strong>Address:</strong> {order.user?.address || 'N/A'}</p>
+            <p><strong>Email:</strong> {order.user?.email || 'N/A'}</p>
+            <p><strong>Phone:</strong> {order.user?.phone || 'N/A'}</p>
           </div>
         </div>
       </Card>
@@ -242,7 +251,7 @@ const OrderDetail = () => {
           dataSource={order.items}
           columns={columns}
           pagination={false}
-          rowKey={(record) => record._id || record.productId || record.product}
+          rowKey={(_, index) => `item-${index}`}
           summary={() => (
             <Table.Summary.Row>
               <Table.Summary.Cell index={0} colSpan={3} className="text-right font-bold">
@@ -271,16 +280,7 @@ const OrderDetail = () => {
         </Card>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-end">
-        <Button
-          type="primary"
-          icon={<PrinterOutlined />}
-          onClick={() => window.print()}
-        >
-          Print Receipt
-        </Button>
-      </div>
+
     </div>
   );
 };
