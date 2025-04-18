@@ -212,6 +212,9 @@ export const userAPI = {
   },
   updateUser: (data: any) => {
     return axiosInstance.put('/user/profile', data);
+  },
+  changePassword: (data: any) => {
+    return axiosInstance.put('/user/change-password', data);
   }
 };
 

@@ -278,10 +278,9 @@ const AdminOrdersPage = () => {
                 title="Revenue"
                 value={stats.revenue}
                 precision={2}
-                prefix="$"
                 valueStyle={{ color: '#3f8600' }}
                 suffix={<DollarOutlined />}
-                formatter={(value) => `$${value.toFixed(2)}`}
+                formatter={(value) => `${value.toFixed(2)}`}
               />
             </Card>
           </Col>
