@@ -148,7 +148,6 @@ const OrderList = () => {
               <li><Tag color="orange">PROCESSING</Tag> - Your order is being prepared for shipping</li>
               <li><Tag color="cyan">SHIPPED</Tag> - Your order has been shipped and is on its way</li>
               <li><Tag color="green">DELIVERED</Tag> - Your order has been delivered</li>
-              <li><Tag color="red">CANCELLED</Tag> - Your order has been cancelled</li>
             </ul>
           }
           type="info"

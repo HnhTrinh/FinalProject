@@ -1,27 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Descriptions, Table, Button, Spin, Tag, Input, Form, Modal, message, Timeline, Steps, Row, Col, Select, Image, Typography
+  Card, Descriptions, Table, Button, Spin, Tag, Input, Form, Modal, message, Steps, Row, Col, Select, Image, Typography
 } from 'antd';
 import {
   ShoppingOutlined, CheckCircleOutlined, CarOutlined, HomeOutlined,
-  CloseCircleOutlined, EditOutlined, SaveOutlined, UserOutlined
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import { orderAPI, ORDER_STATUS } from '../../../services/api';
 import AdminNavbar from '../../../components/AdminNavbar';
 
-const { TextArea } = Input;
+
 
 const { Option } = Select;
 
 const AdminOrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState(0);
-  const [editMode, setEditMode] = useState(false);
   const [trackingModalVisible, setTrackingModalVisible] = useState(false);
   const [trackingForm] = Form.useForm();
 
@@ -41,12 +39,7 @@ const AdminOrderDetail = () => {
         setOrder(orderData);
         setCurrentStepFromStatus(orderData.status);
 
-        // Set form values
-        form.setFieldsValue({
-          customerName: orderData.user?.name,
-          address: orderData.shippingAddress?.address,
-          notes: orderData.notes || '',
-        });
+
 
         // Set tracking form values if available
         if (orderData.trackingNumber) {
@@ -128,35 +121,6 @@ const AdminOrderDetail = () => {
     }
   };
 
-  // Update order details
-  const handleSaveChanges = async () => {
-    try {
-      const values = await form.validateFields();
-
-      // Trong thực tế, bạn cần tạo API này
-      const response = await orderAPI.updateOrderDetails(id || '', {
-        shippingAddress: {
-          name: values.customerName,
-          address: values.address,
-        },
-        notes: values.notes,
-      });
-
-      if (response.data?.success) {
-        message.success('Order details updated');
-        setEditMode(false);
-        fetchOrderDetails(); // Refresh order data
-      } else {
-        message.error(response.data?.message || 'Failed to update order details');
-      }
-    } catch (error) {
-      console.error('Error updating order details:', error);
-      message.error('Failed to update order details');
-    }
-  };
-
-
-
   // Get color for status tag
   const getStatusTagColor = (status: string) => {
     switch (status) {
@@ -176,7 +140,7 @@ const AdminOrderDetail = () => {
       title: 'Product',
       dataIndex: ['product', 'name'],
       key: 'product',
-      render: (name: string, record: any) => {
+      render: (_: string, record: any) => {
         // In the updated API, product is an object with name, price, pictureURL
         const productName = record.product?.name || 'Unknown Product';
         const imageUrl = record.product?.pictureURL;
@@ -202,7 +166,7 @@ const AdminOrderDetail = () => {
       title: 'Price',
       dataIndex: ['product', 'price'],
       key: 'price',
-      render: (price: number, record: any) => `$${(record.product?.price || 0).toFixed(2)}`,
+      render: (_: number, record: any) => `$${(record.product?.price || 0).toFixed(2)}`,
     },
     {
       title: 'Quantity',
@@ -321,121 +285,74 @@ const AdminOrderDetail = () => {
         </Card>
 
         {/* Order Details */}
-        <Row gutter={16} className="mb-6">
-          <Col span={12}>
-            <Card
-              title={
-                <div className="flex justify-between items-center">
-                  <span>Customer Information</span>
-                  <Button
-                    type="text"
-                    icon={editMode ? <SaveOutlined /> : <EditOutlined />}
-                    onClick={() => {
-                      if (editMode) {
-                        handleSaveChanges();
-                      } else {
-                        setEditMode(true);
-                      }
-                    }}
-                  >
-                    {editMode ? 'Save' : 'Edit'}
-                  </Button>
-                </div>
-              }
-              className="h-full"
-            >
-              {editMode ? (
-                <Form form={form} layout="vertical">
-                  <Form.Item
-                    name="customerName"
-                    label="Customer Name"
-                    rules={[{ required: true, message: 'Please enter customer name' }]}
-                  >
-                    <Input prefix={<UserOutlined />} />
-                  </Form.Item>
-                  <Form.Item
-                    name="address"
-                    label="Shipping Address"
-                    rules={[{ required: true, message: 'Please enter shipping address' }]}
-                  >
-                    <TextArea rows={3} />
-                  </Form.Item>
-                  <Form.Item
-                    name="notes"
-                    label="Order Notes"
-                  >
-                    <TextArea rows={3} />
-                  </Form.Item>
-                </Form>
-              ) : (
-                <Descriptions column={1} bordered>
-                  <Descriptions.Item label="Customer Name">
-                    {order.user?.name || 'N/A'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Email">
-                    {order.user?.email || 'N/A'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Shipping Address">
-                    {order.user?.address || 'N/A'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Order Notes">
-                    {order.notes || 'No notes'}
-                  </Descriptions.Item>
-                </Descriptions>
+        <Card
+          title={
+            <div className="flex justify-between items-center">
+              <span>Order & Payment Information</span>
+              {order.status === ORDER_STATUS.PROCESSING && (
+                <Button
+                  type="primary"
+                  onClick={() => setTrackingModalVisible(true)}
+                >
+                  Add Tracking
+                </Button>
               )}
-            </Card>
-          </Col>
-
-          <Col span={12}>
-            <Card
-              title={
-                <div className="flex justify-between items-center">
-                  <span>Order & Payment Information</span>
-                  {order.status === ORDER_STATUS.PROCESSING && (
-                    <Button
-                      type="primary"
-                      onClick={() => setTrackingModalVisible(true)}
-                    >
-                      Add Tracking
-                    </Button>
-                  )}
-                </div>
-              }
-              className="h-full"
-            >
+            </div>
+          }
+          className="mb-6"
+        >
+          <Row gutter={16}>
+            <Col span={12}>
               <Descriptions column={1} bordered>
                 <Descriptions.Item label="Order ID">{order._id}</Descriptions.Item>
                 <Descriptions.Item label="Order Date">
                   {new Date(order.createdAt).toLocaleString()}
                 </Descriptions.Item>
                 <Descriptions.Item label="Payment Method">
-                  {order.paymentDetails?.paymentMethod || 'PayPal'}
+                  PayPal
                 </Descriptions.Item>
-                <Descriptions.Item label="Payment ID">
-                  {order.paymentDetails?.id || 'N/A'}
+                <Descriptions.Item label="Payment Date">
+                  {order.paymentDate ? new Date(order.paymentDate).toLocaleString() : 'N/A'}
                 </Descriptions.Item>
-                <Descriptions.Item label="Payment Status">
-                  {order.paymentDetails?.status || 'N/A'}
+              </Descriptions>
+            </Col>
+
+            <Col span={12}>
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="Customer Name">
+                  {order.user?.name || 'N/A'}
                 </Descriptions.Item>
-                {order.trackingNumber && (
-                  <>
-                    <Descriptions.Item label="Tracking Number">
-                      {order.trackingNumber}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Carrier">
-                      {order.carrier}
-                    </Descriptions.Item>
-                    {order.estimatedDeliveryDate && (
-                      <Descriptions.Item label="Estimated Delivery">
-                        {new Date(order.estimatedDeliveryDate).toLocaleDateString()}
-                      </Descriptions.Item>
-                    )}
-                  </>
+                <Descriptions.Item label="Email">
+                  {order.user?.email || 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Phone">
+                  {order.user?.phone || 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Address">
+                  {order.user?.address || 'N/A'}
+                </Descriptions.Item>
+              </Descriptions>
+            </Col>
+          </Row>
+
+          {order.trackingNumber && (
+            <div className="mt-4">
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="Tracking Number">
+                  {order.trackingNumber}
+                </Descriptions.Item>
+                <Descriptions.Item label="Carrier">
+                  {order.carrier}
+                </Descriptions.Item>
+                {order.estimatedDeliveryDate && (
+                  <Descriptions.Item label="Estimated Delivery">
+                    {new Date(order.estimatedDeliveryDate).toLocaleDateString()}
+                  </Descriptions.Item>
                 )}
               </Descriptions>
-            </Card>
-          </Col>
-        </Row>
+            </div>
+          )}
+        </Card>
 
         {/* Order Items */}
         <Card
@@ -464,33 +381,7 @@ const AdminOrderDetail = () => {
           />
         </Card>
 
-        {/* Status History */}
-        <Card title="Order History" className="mb-6">
-          {order.statusHistory ? (
-            <Timeline mode="left">
-              {order.statusHistory.map((history: any, index: number) => (
-                <Timeline.Item
-                  key={index}
-                  color={getStatusTagColor(history.status)}
-                  label={new Date(history.timestamp).toLocaleString()}
-                >
-                  <p className="font-medium">{history.status.toUpperCase()}</p>
-                  {history.note && <p className="text-gray-600">{history.note}</p>}
-                </Timeline.Item>
-              ))}
-            </Timeline>
-          ) : (
-            <Timeline mode="left">
-              <Timeline.Item
-                color={getStatusTagColor(order.status)}
-                label={new Date(order.createdAt).toLocaleString()}
-              >
-                <p className="font-medium">ORDER CREATED</p>
-                <p className="text-gray-600">Initial status: {order.status.toUpperCase()}</p>
-              </Timeline.Item>
-            </Timeline>
-          )}
-        </Card>
+
 
         {/* Tracking Modal */}
         <Modal

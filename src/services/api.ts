@@ -206,6 +206,12 @@ export const orderAPI = {
 export const userAPI = {
   getUser: (email: any) => {
     return axiosInstance.get(`/user/${email}`);
+  },
+  getCurrentUser: () => {
+    return axiosInstance.get('/user/profile');
+  },
+  updateUser: (data: any) => {
+    return axiosInstance.put('/user/profile', data);
   }
 };
 
