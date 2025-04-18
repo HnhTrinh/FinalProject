@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { cartAPI, authAPI, orderAPI } from "../../services/api";
-import { Button, Table, InputNumber, Empty, Spin, Modal, Divider } from "antd";
-import { DeleteOutlined, ShoppingOutlined } from "@ant-design/icons";
+import { cartAPI, authAPI, orderAPI, userAPI } from "../../services/api";
+import { Button, Table, InputNumber, Empty, Spin, Modal, Divider, Card, Form, Input, Row, Col } from "antd";
+import { DeleteOutlined, ShoppingOutlined, UserOutlined, PhoneOutlined, HomeOutlined, SaveOutlined } from "@ant-design/icons";
 import { refreshCartCount } from "../../modules/nav-bar";
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { handlePayPalSuccess } from "../../utils/paypal";
@@ -17,10 +17,14 @@ const Cart = () => {
   const [totalPrice, setTotalPrice] = useState(0);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userForm] = Form.useForm();
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
-  // Kiểm tra xác thực và lấy dữ liệu giỏ hàng
+  // Kiểm tra xác thực và lấy dữ liệu giỏ hàng và thông tin người dùng
   useEffect(() => {
-    const checkAuthAndFetchCart = async () => {
+    const checkAuthAndFetchData = async () => {
       const { isAuthenticated } = authAPI.checkToken();
 
       if (!isAuthenticated) {
@@ -30,25 +34,44 @@ const Cart = () => {
 
       try {
         setLoading(true);
-        const response = await cartAPI.getCart();
-        if (response.data?.success) {
-          console.log('Cart data:', response.data.data);
+
+        // Lấy dữ liệu giỏ hàng
+        const cartResponse = await cartAPI.getCart();
+        if (cartResponse.data?.success) {
+          console.log('Cart data:', cartResponse.data.data);
           // Lấy items từ data.items
-          const items = response.data.data?.items || [];
+          const items = cartResponse.data.data?.items || [];
           setCartItems(items);
         } else {
-          toast.error(response.data?.message || "Không thể tải giỏ hàng");
+          toast.error(cartResponse.data?.message || "Không thể tải giỏ hàng");
+        }
+
+        // Lấy thông tin người dùng
+        const userResponse = await userAPI.getCurrentUser();
+        if (userResponse.data?.success) {
+          console.log('User data:', userResponse.data.data);
+          const userData = userResponse.data.data;
+          setUserProfile(userData);
+
+          // Cập nhật form với dữ liệu người dùng
+          userForm.setFieldsValue({
+            name: userData.name || '',
+            phone: userData.phone || '',
+            address: userData.address || ''
+          });
+        } else {
+          toast.error(userResponse.data?.message || "Không thể tải thông tin người dùng");
         }
       } catch (error) {
-        console.error("Lỗi khi tải giỏ hàng:", error);
-        toast.error("Không thể tải giỏ hàng");
+        console.error("Lỗi khi tải dữ liệu:", error);
+        toast.error("Không thể tải dữ liệu");
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuthAndFetchCart();
-  }, [navigate]);
+    checkAuthAndFetchData();
+  }, [navigate, userForm]);
 
   // Tính tổng tiền khi cartItems hoặc selectedRowKeys thay đổi
   useEffect(() => {
@@ -224,6 +247,13 @@ const Cart = () => {
       return;
     }
 
+    // Kiểm tra xem người dùng đã cập nhật thông tin chưa
+    if (!userProfile?.name || !userProfile?.phone || !userProfile?.address) {
+      toast.warning('Vui lòng cập nhật đầy đủ thông tin người dùng trước khi thanh toán');
+      setEditingProfile(true);
+      return;
+    }
+
     // Mở modal thanh toán
     setPaymentModalVisible(true);
   };
@@ -232,25 +262,37 @@ const Cart = () => {
   const onPayPalSuccess = async (details) => {
     try {
       setProcessingPayment(true);
+      console.log('PayPal payment details:', details);
 
-      // Lọc các sản phẩm được chọn để thanh toán
-      const selectedCartItems = cartItems.filter(item =>
-        selectedRowKeys.includes(item._id)
-      );
+      // Kiểm tra xem người dùng đã cập nhật thông tin chưa
+      if (!userProfile?.name || !userProfile?.phone || !userProfile?.address) {
+        toast.error('Vui lòng cập nhật đầy đủ thông tin người dùng trước khi thanh toán');
+        setEditingProfile(true);
+        setProcessingPayment(false);
+        return;
+      }
 
       // Xử lý thanh toán thành công với PayPal
-      const result = await handlePayPalSuccess(details, selectedCartItems, totalPrice);
+      // Theo API mới, backend sẽ tự động lấy dữ liệu từ giỏ hàng
+      const result = await handlePayPalSuccess(details);
 
       if (result.success) {
         // Đóng modal thanh toán
         setPaymentModalVisible(false);
+
+        // Hiển thị thông báo thành công
+        toast.success('Đơn hàng của bạn đã được tạo thành công!');
+
+        // Cập nhật số lượng sản phẩm trong giỏ hàng ở navbar
+        // Backend sẽ tự động xóa các sản phẩm trong giỏ hàng sau khi tạo đơn hàng
+        refreshCartCount();
 
         // Chuyển hướng đến trang đơn hàng
         navigate('/orders');
       }
     } catch (error) {
       console.error('Error processing payment:', error);
-      toast.error('Failed to process payment. Please try again.');
+      toast.error('Không thể xử lý thanh toán. Vui lòng thử lại.');
     } finally {
       setProcessingPayment(false);
     }
@@ -289,8 +331,113 @@ const Cart = () => {
     ...item
   }));
 
+  // Xử lý cập nhật thông tin người dùng
+  const handleUpdateProfile = async () => {
+    try {
+      setSavingProfile(true);
+      const values = await userForm.validateFields();
+
+      const response = await userAPI.updateUser(values);
+
+      if (response.data?.success) {
+        setUserProfile({
+          ...userProfile,
+          ...values
+        });
+        setEditingProfile(false);
+        toast.success("Cập nhật thông tin thành công");
+
+        // Lưu địa chỉ vào localStorage để sử dụng khi thanh toán
+        localStorage.setItem('user_address', values.address);
+      } else {
+        toast.error(response.data?.message || "Không thể cập nhật thông tin");
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật thông tin:", error);
+      toast.error("Không thể cập nhật thông tin");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* User Profile Card */}
+      <Card
+        title={
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold">Thông tin người dùng</span>
+            <Button
+              type="primary"
+              icon={editingProfile ? <SaveOutlined /> : <UserOutlined />}
+              onClick={() => {
+                if (editingProfile) {
+                  handleUpdateProfile();
+                } else {
+                  setEditingProfile(true);
+                }
+              }}
+              loading={savingProfile}
+            >
+              {editingProfile ? 'Lưu thông tin' : 'Chỉnh sửa'}
+            </Button>
+          </div>
+        }
+        className="mb-6"
+      >
+        {editingProfile ? (
+          <Form
+            form={userForm}
+            layout="vertical"
+          >
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item
+                  name="name"
+                  label="Họ tên"
+                  rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+                >
+                  <Input prefix={<UserOutlined />} placeholder="Nhập họ tên" />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  name="phone"
+                  label="Số điện thoại"
+                  rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+                >
+                  <Input prefix={<PhoneOutlined />} placeholder="Nhập số điện thoại" />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  name="address"
+                  label="Địa chỉ"
+                  rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
+                >
+                  <Input prefix={<HomeOutlined />} placeholder="Nhập địa chỉ" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        ) : (
+          <Row gutter={16}>
+            <Col span={8}>
+              <div className="mb-2 font-medium">Họ tên:</div>
+              <div>{userProfile?.name || 'Chưa cập nhật'}</div>
+            </Col>
+            <Col span={8}>
+              <div className="mb-2 font-medium">Số điện thoại:</div>
+              <div>{userProfile?.phone || 'Chưa cập nhật'}</div>
+            </Col>
+            <Col span={8}>
+              <div className="mb-2 font-medium">Địa chỉ:</div>
+              <div>{userProfile?.address || 'Chưa cập nhật'}</div>
+            </Col>
+          </Row>
+        )}
+      </Card>
+
       <h1 className="text-2xl font-bold mb-6">Giỏ hàng của bạn</h1>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
@@ -339,7 +486,25 @@ const Cart = () => {
           </div>
         ) : (
           <>
-            <div className="mb-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">Shipping Information</h3>
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-gray-500 text-sm">Name:</div>
+                    <div className="font-medium">{userProfile?.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 text-sm">Phone:</div>
+                    <div className="font-medium">{userProfile?.phone}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-gray-500 text-sm">Address:</div>
+                    <div className="font-medium">{userProfile?.address}</div>
+                  </div>
+                </div>
+              </div>
+
               <h3 className="text-lg font-semibold mb-3">Order Summary</h3>
               <div className="bg-gray-50 p-4 rounded-lg">
                 {cartItems

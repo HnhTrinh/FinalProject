@@ -13,20 +13,20 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
-    console.log("Token from localStorage:", token);
+    // console.log("Token from localStorage:", token);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("Request headers:", config.headers);
+        // console.log("Request headers:", config.headers);
     } else {
       console.warn("No token found in localStorage!");
     }
 
-    console.log("API Request:", {
-      url: config.url,
-      method: config.method,
-      data: config.data
-    });
+    // console.log("API Request:", {
+    //   url: config.url,
+    //   method: config.method,
+    //   data: config.data
+    // });
 
     return config;
   },
@@ -39,11 +39,11 @@ axiosInstance.interceptors.request.use(
 // Response interceptor để xử lý response
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log("API Response:", {
-      url: response.config.url,
-      status: response.status,
-      data: response.data
-    });
+    // console.log("API Response:", {
+    //   url: response.config.url,
+    //   status: response.status,
+    //   data: response.data
+    // });
     return response;
   },
   (error) => {
@@ -144,8 +144,7 @@ export const ORDER_STATUS = {
   PROCESSING: 'processing',
   SHIPPED: 'shipped',
   DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
-  PAYMENT_FAILED: 'payment_failed'
+  COMPLETED: 'completed'
 };
 
 // Order APIs
@@ -185,16 +184,6 @@ export const orderAPI = {
     return axiosInstance.put(`/orders/${orderId}/tracking`, trackingData);
   },
 
-  // Admin: Gửi email thông báo cho khách hàng
-  sendOrderNotification: (orderId: string) => {
-    return axiosInstance.post(`/orders/${orderId}/notify`);
-  },
-
-  // Admin: Hủy đơn hàng
-  cancelOrder: (orderId: string, reason: string) => {
-    return axiosInstance.put(`/orders/${orderId}/cancel`, { reason });
-  },
-
   // Admin: Lấy thống kê đơn hàng
   getOrderStats: () => {
     return axiosInstance.get('/orders/stats');
@@ -217,6 +206,15 @@ export const orderAPI = {
 export const userAPI = {
   getUser: (email: any) => {
     return axiosInstance.get(`/user/${email}`);
+  },
+  getCurrentUser: () => {
+    return axiosInstance.get('/user/profile');
+  },
+  updateUser: (data: any) => {
+    return axiosInstance.put('/user/profile', data);
+  },
+  changePassword: (data: any) => {
+    return axiosInstance.put('/user/change-password', data);
   }
 };
 
