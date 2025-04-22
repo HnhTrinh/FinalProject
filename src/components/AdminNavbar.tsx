@@ -42,11 +42,17 @@ const AdminNavbar: React.FC = () => {
     // Xóa tất cả dữ liệu trong localStorage
     localStorage.clear();
 
-    // Chuyển hướng về trang đăng nhập
-    navigate('/login');
+    // Cập nhật trạng thái người dùng
+    setUserInfo({});
+
+    // Khởi tạo sự kiện auth-change để cập nhật trạng thái xác thực
+    window.dispatchEvent(new Event('auth-change'));
 
     // Hiển thị thông báo đăng xuất thành công
     toast.success("Đăng xuất thành công");
+
+    // Chuyển hướng về trang đăng nhập
+    navigate('/login');
   };
 
   // Xử lý đổi mật khẩu

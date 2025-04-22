@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Table, Button, Modal, Input, Form, message, Space, Popconfirm, Spin, Select, Upload } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined, LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import AdminNavbar from "../../components/AdminNavbar";
+
 import { productAPI, authAPI, categoryAPI } from "../../services/api";
 
 
@@ -22,20 +22,11 @@ const AdminPage = () => {
 
   const navigate = useNavigate();
 
-  // Kiểm tra token và fetch data khi component mounts
+  // Fetch data khi component mounts
   useEffect(() => {
-    const { isAuthenticated, token } = authAPI.checkToken();
-    console.log("Auth check on admin page:", { isAuthenticated, token });
-
-    if (!isAuthenticated) {
-      message.error("You must be logged in to access this page");
-      navigate("/login");
-      return;
-    }
-
     fetchProducts();
     fetchCategories();
-  }, [navigate]);
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -220,8 +211,7 @@ const AdminPage = () => {
 
   return (
     <div>
-      <AdminNavbar />
-      <div className="container mx-auto p-6">
+      <div>
         <h2 className="text-3xl font-bold mb-6">Admin Product Management hihi</h2>
 
         {/* Product Table */}

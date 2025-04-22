@@ -1,38 +1,41 @@
-import React, { useState, useEffect } from 'react';
-
-/**
- * Component LoadingSpinner để hiển thị trạng thái loading
- */
-export const LoadingSpinner: React.FC = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  );
-};
+import { useState, useEffect } from 'react';
 
 /**
  * Custom hook để xử lý logic xác thực
- * @returns Trạng thái xác thực, thông tin người dùng và component loading
+ * @returns Trạng thái xác thực và thông tin người dùng
  */
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    // Kiểm tra token và quyền admin
+  // Hàm kiểm tra trạng thái xác thực
+  const checkAuthStatus = () => {
     const token = localStorage.getItem('access_token');
     const isAuth = localStorage.getItem('authorization') === 'true';
     const userIsAdmin = localStorage.getItem('user_isAdmin') === 'true';
 
-    setIsAuthenticated(!!token && isAuth);
-    setIsAdmin(userIsAdmin);
+    // Đảm bảo rằng cả token và isAuth đều phải tồn tại để xác thực
+    const authenticated = !!token && isAuth;
+
+    setIsAuthenticated(authenticated);
+    setIsAdmin(authenticated && userIsAdmin);
     setIsLoading(false);
+  };
+
+  // Kiểm tra khi component mount và khi có sự kiện auth-change
+  useEffect(() => {
+    // Kiểm tra ban đầu
+    checkAuthStatus();
+
+    // Lắng nghe sự kiện auth-change
+    const handleAuthChange = () => checkAuthStatus();
+    window.addEventListener('auth-change', handleAuthChange);
+
+    // Cleanup
+    return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
-  // Component loading để sử dụng trong các route
-  const LoadingComponent = () => <LoadingSpinner />;
-
-  return { isAuthenticated, isAdmin, isLoading, LoadingComponent };
+  // Trả về các giá trị cần thiết
+  return { isAuthenticated, isAdmin, isLoading };
 };

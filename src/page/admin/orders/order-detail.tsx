@@ -8,7 +8,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons';
 import { orderAPI, ORDER_STATUS } from '../../../services/api';
-import AdminNavbar from '../../../components/AdminNavbar';
+
 
 
 
@@ -165,7 +165,6 @@ const AdminOrderDetail = () => {
   if (loading) {
     return (
       <div>
-        <AdminNavbar />
         <div className="flex justify-center items-center min-h-screen">
           <Spin size="large" tip="Loading order details..." />
         </div>
@@ -176,7 +175,6 @@ const AdminOrderDetail = () => {
   if (!order) {
     return (
       <div>
-        <AdminNavbar />
         <div className="container mx-auto px-4 py-8 text-center">
           <h2 className="text-2xl font-bold mb-4">Order Not Found</h2>
           <p className="mb-6">The order you're looking for doesn't exist.</p>
@@ -190,8 +188,7 @@ const AdminOrderDetail = () => {
 
   return (
     <div>
-      <AdminNavbar />
-      <div className="container mx-auto px-4 py-8">
+      <div>
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold mr-4">Order #{order._id}</h1>

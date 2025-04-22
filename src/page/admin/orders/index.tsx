@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Tag, Button, Input, Select, DatePicker, Card, Statistic, Row, Col, Spin, message } from 'antd';
 import { SearchOutlined, ReloadOutlined, DollarOutlined, ShoppingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { orderAPI, ORDER_STATUS } from '../../../services/api';
-import AdminNavbar from '../../../components/AdminNavbar';
+
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -220,8 +220,7 @@ const AdminOrdersPage = () => {
 
   return (
     <div>
-      <AdminNavbar />
-      <div className="container mx-auto px-4 py-8">
+      <div>
         <h1 className="text-2xl font-bold mb-6">Order Management</h1>
 
         {/* Statistics Cards */}

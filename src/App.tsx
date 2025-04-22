@@ -6,14 +6,14 @@ import HomePage from './page/home'
 import ProductListPage from './page/product-list'
 import ProductDetailsPage from './page/product-list/detail'
 import DefaultLayout from './layout/layout-nav'
+import AdminLayout from './layout/admin-layout'
 import Cart from './page/cart'
 import ContactPage from './page/contact'
 import AdminPage from './page/admin'
 import AdminCategoryPage from './page/admin/category'
 import AuthInitializer from './components/AuthInitializer'
 import NotFoundPage from './page/not-found'
-import ProtectedRoute from './components/ProtectedRoute'
-import PublicRoute from './components/PublicRoute'
+import AuthRoute from './components/AuthRoute'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import OrderList from './page/orders'
@@ -33,16 +33,22 @@ function App() {
         <AuthInitializer />
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
         <Routes>
-        {/* Public routes - chỉ truy cập khi chưa đăng nhập */}
-        <Route element={<PublicRoute />}>
+        {/* Public routes - có thể truy cập khi chưa đăng nhập */}
+        <Route element={<AuthRoute routeType="public" />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
 
-        {/* Protected routes with DefaultLayout */}
-        <Route element={<ProtectedRoute />}>
+        {/* Public route with DefaultLayout */}
+        <Route element={<AuthRoute routeType="public" />}>
           <Route element={<DefaultLayout />}>
-            <Route path='/' element={<HomePage />} />
+            <Route path="/" element={<HomePage />} />
+          </Route>
+        </Route>
+
+        {/* User routes with DefaultLayout - chỉ truy cập khi đã đăng nhập */}
+        <Route element={<AuthRoute routeType="user" />}>
+          <Route element={<DefaultLayout />}>
             <Route path="/products" element={<ProductListPage />} />
             <Route path="/products/:id" element={<ProductDetailsPage />} />
             <Route path="/cart" element={<Cart />} />
@@ -52,12 +58,14 @@ function App() {
           </Route>
         </Route>
 
-        {/* Admin routes */}
-        <Route element={<ProtectedRoute requireAdmin={true} />}>
-          <Route path="/admin/product" element={<AdminPage />} />
-          <Route path="/admin/category" element={<AdminCategoryPage />} />
-          <Route path="/admin/orders" element={<AdminOrdersPage />} />
-          <Route path="/admin/orders/:id" element={<AdminOrderDetail />} />
+        {/* Admin routes - chỉ truy cập khi là admin */}
+        <Route element={<AuthRoute routeType="admin" />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin/product" element={<AdminPage />} />
+            <Route path="/admin/category" element={<AdminCategoryPage />} />
+            <Route path="/admin/orders" element={<AdminOrdersPage />} />
+            <Route path="/admin/orders/:id" element={<AdminOrderDetail />} />
+          </Route>
         </Route>
 
         {/* 404 route */}

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Table, Button, Modal, Input, Form, message, Space, Popconfirm, Spin } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined, LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import AdminNavbar from "../../components/AdminNavbar";
+
 import { categoryAPI, authAPI } from "../../services/api";
 
 const AdminCategoryPage = () => {
@@ -17,19 +17,10 @@ const AdminCategoryPage = () => {
 
   const navigate = useNavigate();
 
-  // Kiểm tra token và fetch data khi component mounts
+  // Fetch data khi component mounts
   useEffect(() => {
-    const { isAuthenticated, token } = authAPI.checkToken();
-    console.log("Auth check on admin category page:", { isAuthenticated, token });
-
-    if (!isAuthenticated) {
-      message.error("You must be logged in to access this page");
-      navigate("/login");
-      return;
-    }
-
     fetchCategories();
-  }, [navigate]);
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -160,8 +151,7 @@ const AdminCategoryPage = () => {
 
   return (
     <div>
-      <AdminNavbar />
-      <div className="container mx-auto p-6">
+      <div>
         <h2 className="text-3xl font-bold mb-6">Category Management</h2>
 
         {/* Category Table */}

@@ -59,10 +59,11 @@ const LoginPage: React.FC = () => {
 
       toast.success("Login successful! Welcome back.");
 
-      // Chuyển hướng dựa vào quyền admin sau 0.5 giây
-      setTimeout(() => {
-        navigate(userData.isAdmin ? "/admin/product" : '/');
-      }, 500);
+      // Khởi tạo sự kiện auth-change để cập nhật trạng thái xác thực
+      window.dispatchEvent(new Event('auth-change'));
+
+      // Chuyển hướng dựa vào quyền admin
+      navigate(userData.isAdmin ? "/admin/product" : '/');
     } catch (error: any) {
       // Xử lý lỗi từ response
       const errorResponse = error.response?.data;

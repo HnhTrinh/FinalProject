@@ -116,15 +116,18 @@ const NavBar = () => {
     localStorage.clear();
 
     // Cập nhật trạng thái đăng nhập và thông tin người dùng
-    // setIsAuthenticated(false);
-    // setUser(null);
+    setIsAuthenticated(false);
+    setUser(null);
     setCartItemCount(0);
 
-    // Chuyển hướng về trang chủ
-    navigate("/login");
+    // Khởi tạo sự kiện auth-change để cập nhật trạng thái xác thực
+    window.dispatchEvent(new Event('auth-change'));
 
     // Hiển thị thông báo đăng xuất thành công
     toast.success("Đăng xuất thành công");
+
+    // Chuyển hướng về trang đăng nhập
+    navigate("/login");
   };
 
   // Xử lý đổi mật khẩu
