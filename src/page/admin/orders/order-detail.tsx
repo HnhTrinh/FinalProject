@@ -102,24 +102,6 @@ const AdminOrderDetail = () => {
     }
   };
 
-  // Update shipping information
-  const handleUpdateTracking = async (values: any) => {
-    try {
-      // Trong thực tế, bạn cần tạo API này
-      const response = await orderAPI.updateOrderTracking(id || '', values);
-
-      if (response.data?.success) {
-        message.success('Tracking information updated');
-        setTrackingModalVisible(false);
-        fetchOrderDetails(); // Refresh order data
-      } else {
-        message.error(response.data?.message || 'Failed to update tracking information');
-      }
-    } catch (error) {
-      console.error('Error updating tracking information:', error);
-      message.error('Failed to update tracking information');
-    }
-  };
 
   // Get color for status tag
   const getStatusTagColor = (status: string) => {
@@ -335,7 +317,7 @@ const AdminOrderDetail = () => {
             </Col>
           </Row>
 
-          {order.trackingNumber && (
+          {/* {order.trackingNumber && (
             <div className="mt-4">
               <Descriptions column={1} bordered>
                 <Descriptions.Item label="Tracking Number">
@@ -351,7 +333,7 @@ const AdminOrderDetail = () => {
                 )}
               </Descriptions>
             </div>
-          )}
+          )} */}
         </Card>
 
         {/* Order Items */}
@@ -382,9 +364,7 @@ const AdminOrderDetail = () => {
         </Card>
 
 
-
-        {/* Tracking Modal */}
-        <Modal
+        {/* <Modal
           title="Add Tracking Information"
           open={trackingModalVisible}
           onCancel={() => setTrackingModalVisible(false)}
@@ -423,7 +403,7 @@ const AdminOrderDetail = () => {
               <Input type="date" />
             </Form.Item>
           </Form>
-        </Modal>
+        </Modal> */}
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "../modules/nav-bar";
+import NavBar from "../components/NavBar";
 import Footer from "../modules/footer";
 
 export default function DefaultLayout() {
   return <div className="h-screen">
-    <Navbar />
+    <NavBar />
     <Outlet />
     <Footer />
   </div>

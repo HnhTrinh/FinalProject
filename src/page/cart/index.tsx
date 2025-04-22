@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { cartAPI, authAPI, orderAPI, userAPI } from "../../services/api";
 import { Button, Table, InputNumber, Empty, Spin, Modal, Divider, Card, Form, Input, Row, Col } from "antd";
 import { DeleteOutlined, ShoppingOutlined, UserOutlined, PhoneOutlined, HomeOutlined, SaveOutlined } from "@ant-design/icons";
-import { refreshCartCount } from "../../modules/nav-bar";
+import { refreshCartCount } from "../../components/NavBar";
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { handlePayPalSuccess } from "../../utils/paypal";
 

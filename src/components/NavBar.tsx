@@ -26,7 +26,7 @@ export const refreshCartCount = () => {
   updateCartBadgeCount();
 };
 
-const Navbar = () => {
+const NavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [current, setCurrent] = useState('home');
@@ -361,4 +361,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default NavBar;

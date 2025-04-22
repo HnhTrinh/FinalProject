@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { productAPI } from "../../services/api";
 import { toast } from "react-toastify";
 import { cartAPI } from "../../services/api";
-import { refreshCartCount } from "../../modules/nav-bar";
+import { refreshCartCount } from "../../components/NavBar";
 
 
 const ProductDetailsPage = () => {
