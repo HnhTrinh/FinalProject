@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Modal, Spin, Divider } from "antd";
 import { PayPalButtons } from "@paypal/react-paypal-js";
-import { paypalAPI } from "../../services/api";
+// Không cần import paypalAPI vì chúng ta xử lý logic trực tiếp trong component
 import { refreshCartCount } from "../../components/NavBar";
+import { orderAPI } from "../../services/api";
 
 const CartCheckoutPaypal = ({ visible, onClose, userProfile, cartItems, selectedItems, totalPrice }) => {
   const navigate = useNavigate();
@@ -23,14 +24,28 @@ const CartCheckoutPaypal = ({ visible, onClose, userProfile, cartItems, selected
         return;
       }
 
-      const result = await paypalAPI.handlePaymentSuccess(details);
-      if (result.success) {
+      const response = await orderAPI.createOrder({});
+
+      if (response.data?.success) {
+        // Lấy ID đơn hàng từ response
+        const orderId = response.data.data?._id ||
+          (response.data.data?.order?._id) ||
+          (typeof response.data.data === 'string' ? response.data.data : null);
+
+        if (!orderId) {
+          console.error('Order ID not found in response:', response.data);
+          toast.warning('Đơn hàng đã được tạo nhưng không tìm thấy ID. Vui lòng kiểm tra trang đơn hàng.');
+        }
+
         onClose();
         toast.success('Đơn hàng của bạn đã được tạo thành công!');
         refreshCartCount();
         navigate('/orders');
+      } else {
+        toast.error(response.data?.message || 'Không thể tạo đơn hàng');
       }
     } catch (error) {
+      console.error('Error creating order:', error);
       toast.error('Không thể xử lý thanh toán. Vui lòng thử lại.');
     } finally {
       setProcessingPayment(false);
@@ -39,7 +54,15 @@ const CartCheckoutPaypal = ({ visible, onClose, userProfile, cartItems, selected
 
   // Tạo đơn hàng PayPal
   const createPayPalOrder = (data, actions) => {
-    return paypalAPI.createOrderForSDK(data, actions, totalPrice);
+    return actions.order.create({
+      purchase_units: [{
+        amount: {
+          currency_code: "USD",
+          value: totalPrice.toFixed(2)
+        }
+      }],
+      application_context: { shipping_preference: "NO_SHIPPING" }
+    });
   };
 
   // Xử lý khi PayPal xác nhận thanh toán
