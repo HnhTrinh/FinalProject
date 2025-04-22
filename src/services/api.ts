@@ -13,20 +13,12 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
-    // console.log("Token from localStorage:", token);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-        // console.log("Request headers:", config.headers);
     } else {
       console.warn("No token found in localStorage!");
     }
-
-    // console.log("API Request:", {
-    //   url: config.url,
-    //   method: config.method,
-    //   data: config.data
-    // });
 
     return config;
   },
@@ -39,11 +31,6 @@ axiosInstance.interceptors.request.use(
 // Response interceptor để xử lý response
 axiosInstance.interceptors.response.use(
   (response) => {
-    // console.log("API Response:", {
-    //   url: response.config.url,
-    //   status: response.status,
-    //   data: response.data
-    // });
     return response;
   },
   (error) => {
@@ -197,6 +184,61 @@ export const orderAPI = {
   // Xác nhận thanh toán PayPal
   verifyPayPalPayment: (paymentData: any) => {
     return axiosInstance.post('/orders/verify-payment', paymentData);
+  }
+};
+
+// PayPal APIs
+export const paypalAPI = {
+  // Xử lý khi thanh toán PayPal thành công
+  handlePaymentSuccess: async (details: any) => {
+    try {
+      // Gọi API để tạo đơn hàng từ giỏ hàng
+      const response = await orderAPI.createOrder({});
+
+      if (response.data?.success) {
+        // Lấy ID đơn hàng từ response
+        const orderId = response.data.data?._id ||
+                       (response.data.data?.order?._id) ||
+                       (typeof response.data.data === 'string' ? response.data.data : null);
+
+        if (!orderId) {
+          console.error('Order ID not found in response:', response.data);
+          return { success: true, orderId: null };
+        }
+
+        return { success: true, orderId };
+      } else {
+        return { success: false, error: response.data?.message || 'Failed to create order' };
+      }
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create order. Please try again.';
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  // Tạo cấu trúc đơn hàng PayPal cho SDK
+  createOrderForSDK: (data: any, actions: any, amount: number) => {
+    return actions.order.create({
+      purchase_units: [{
+        amount: {
+          currency_code: "USD",
+          value: amount.toFixed(2)
+        }
+      }],
+      application_context: { shipping_preference: "NO_SHIPPING" }
+    });
+  },
+
+  // Xác nhận thanh toán PayPal
+  verifyPayment: async (paymentDetails: any) => {
+    try {
+      const response = await orderAPI.verifyPayPalPayment(paymentDetails);
+      return response.data;
+    } catch (error) {
+      console.error('Error verifying PayPal payment:', error);
+      throw error;
+    }
   }
 };
 

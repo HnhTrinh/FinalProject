@@ -2,12 +2,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { cartAPI, authAPI, orderAPI, userAPI } from "../../services/api";
-import { Button, Table, InputNumber, Empty, Spin, Modal, Divider, Card, Form, Input, Row, Col } from "antd";
+import { cartAPI, authAPI, userAPI } from "../../services/api";
+import { Button, InputNumber, Empty, Spin, Card, Form, Input, Row, Col } from "antd";
 import { DeleteOutlined, ShoppingOutlined, UserOutlined, PhoneOutlined, HomeOutlined, SaveOutlined } from "@ant-design/icons";
 import { refreshCartCount } from "../../components/NavBar";
-import { PayPalButtons } from "@paypal/react-paypal-js";
-import { handlePayPalSuccess } from "../../utils/paypal";
+import CartCheckoutPaypal from "./CartCheckoutPaypal";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -16,7 +15,6 @@ const Cart = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-  const [processingPayment, setProcessingPayment] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [userForm] = Form.useForm();
   const [editingProfile, setEditingProfile] = useState(false);
@@ -72,6 +70,15 @@ const Cart = () => {
 
     checkAuthAndFetchData();
   }, [navigate, userForm]);
+
+  // Xử lý toggle chọn/bỏ chọn sản phẩm
+  const toggleSelectItem = (itemId) => {
+    const isSelected = selectedRowKeys.includes(itemId);
+    const newSelectedKeys = isSelected
+      ? selectedRowKeys.filter(key => key !== itemId) // Bỏ chọn
+      : [...selectedRowKeys, itemId];                // Thêm vào
+    setSelectedRowKeys(newSelectedKeys);
+  };
 
   // Tính tổng tiền khi cartItems hoặc selectedRowKeys thay đổi
   useEffect(() => {
@@ -145,100 +152,7 @@ const Cart = () => {
     }
   };
 
-  // Xử lý chọn hàng
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (keys) => setSelectedRowKeys(keys),
-    getCheckboxProps: (record) => ({
-      // Disable checkbox nếu sản phẩm không tồn tại hoặc hết hàng
-      disabled: record.productExists === false ||
-                (record.productDetails && record.productDetails.amountInStore <= 0),
-    }),
-  };
-
-  // Định nghĩa cột
-  const columns = [
-    {
-      title: 'Sản phẩm',
-      dataIndex: 'productDetails',
-      key: 'productDetails',
-      render: (productDetails, record) => {
-        const productExists = record.productExists !== false;
-        const isOutOfStock = productDetails && productDetails.amountInStore <= 0;
-
-        return (
-          <div className={`flex items-center ${isOutOfStock ? 'opacity-60' : ''}`}>
-            <img
-              src={productDetails?.pictureURL || "https://via.placeholder.com/80x80"}
-              alt={productDetails?.name}
-              className="w-16 h-16 object-cover rounded mr-4"
-            />
-            <div>
-              <div className="font-medium">{productDetails?.name}</div>
-              {!productExists && (
-                <div className="text-red-500 text-xs">Sản phẩm không còn tồn tại</div>
-              )}
-              {isOutOfStock && productExists && (
-                <div className="text-orange-500 text-xs">Sản phẩm đã hết hàng</div>
-              )}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Giá',
-      dataIndex: ['productDetails', 'price'],
-      key: 'price',
-      render: (price) => <span>${(price || 0).toFixed(2)}</span>,
-    },
-    {
-      title: 'Số lượng',
-      dataIndex: 'quantity',
-      key: 'quantity',
-      render: (quantity, record) => {
-        const productExists = record.productExists !== false;
-        const isOutOfStock = record.productDetails && record.productDetails.amountInStore <= 0;
-
-        return (
-          <InputNumber
-            min={1}
-            value={quantity}
-            onChange={(value) => handleQuantityChange(record, value)}
-            disabled={!productExists || isOutOfStock}
-            className="w-16"
-          />
-        );
-      },
-    },
-    {
-      title: 'Tổng',
-      key: 'total',
-      render: (_, record) => {
-        const price = record.productDetails?.price || 0;
-        return <span className="font-medium">${(price * record.quantity).toFixed(2)}</span>;
-      },
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_, record) => {
-        const isOutOfStock = record.productDetails && record.productDetails.amountInStore <= 0;
-
-        return (
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleRemoveItem(record)}
-            className={isOutOfStock ? 'opacity-60' : ''}
-          >
-            Xóa
-          </Button>
-        );
-      },
-    },
-  ];
+  // Không cần định nghĩa rowSelection và columns khi sử dụng Row và Col
 
   // Xử lý thanh toán
   const handleCheckout = () => {
@@ -258,45 +172,7 @@ const Cart = () => {
     setPaymentModalVisible(true);
   };
 
-  // Xử lý khi thanh toán PayPal thành công
-  const onPayPalSuccess = async (details) => {
-    try {
-      setProcessingPayment(true);
-      console.log('PayPal payment details:', details);
-
-      // Kiểm tra xem người dùng đã cập nhật thông tin chưa
-      if (!userProfile?.name || !userProfile?.phone || !userProfile?.address) {
-        toast.error('Vui lòng cập nhật đầy đủ thông tin người dùng trước khi thanh toán');
-        setEditingProfile(true);
-        setProcessingPayment(false);
-        return;
-      }
-
-      // Xử lý thanh toán thành công với PayPal
-      // Theo API mới, backend sẽ tự động lấy dữ liệu từ giỏ hàng
-      const result = await handlePayPalSuccess(details);
-
-      if (result.success) {
-        // Đóng modal thanh toán
-        setPaymentModalVisible(false);
-
-        // Hiển thị thông báo thành công
-        toast.success('Đơn hàng của bạn đã được tạo thành công!');
-
-        // Cập nhật số lượng sản phẩm trong giỏ hàng ở navbar
-        // Backend sẽ tự động xóa các sản phẩm trong giỏ hàng sau khi tạo đơn hàng
-        refreshCartCount();
-
-        // Chuyển hướng đến trang đơn hàng
-        navigate('/orders');
-      }
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      toast.error('Không thể xử lý thanh toán. Vui lòng thử lại.');
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
+  // Xử lý thanh toán được chuyển sang component CartCheckoutPaypal
 
   // Hiển thị trạng thái loading
   if (loading) {
@@ -440,14 +316,93 @@ const Cart = () => {
 
       <h1 className="text-2xl font-bold mb-6">Giỏ hàng của bạn</h1>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-        <Table
-          rowSelection={rowSelection}
-          columns={columns}
-          dataSource={dataSource}
-          pagination={false}
-          rowKey={record => record._id}
-        />
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 p-4">
+        {/* Header Row */}
+        <Row className="py-3 border-b font-medium text-gray-700">
+          <Col span={1}></Col> {/* Checkbox column */}
+          <Col span={10}>Sản phẩm</Col>
+          <Col span={3}>Giá</Col>
+          <Col span={4}>Số lượng</Col>
+          <Col span={3}>Tổng</Col>
+          <Col span={3}>Thao tác</Col>
+        </Row>
+
+        {/* Cart Items */}
+        {dataSource.map(item => {
+          const productDetails = item.productDetails || {};
+          const productExists = item.productExists !== false;
+          const isOutOfStock = productDetails && productDetails.amountInStore <= 0;
+          const isDisabled = !productExists || isOutOfStock;
+          const isSelected = selectedRowKeys.includes(item._id);
+
+          return (
+            <Row key={item._id} className={`py-4 border-b items-center ${isOutOfStock ? 'opacity-60' : ''}`}>
+              {/* Checkbox */}
+              <Col span={1} className="flex justify-center">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  disabled={isDisabled}
+                  onChange={() => toggleSelectItem(item._id)}
+                  className="w-4 h-4"
+                />
+              </Col>
+
+              {/* Product */}
+              <Col span={10}>
+                <div className="flex items-center">
+                  <img
+                    src={productDetails?.pictureURL || "https://via.placeholder.com/80x80"}
+                    alt={productDetails?.name}
+                    className="w-16 h-16 object-cover rounded mr-4"
+                  />
+                  <div>
+                    <div className="font-medium">{productDetails?.name}</div>
+                    {!productExists && (
+                      <div className="text-red-500 text-xs">Sản phẩm không còn tồn tại</div>
+                    )}
+                    {isOutOfStock && productExists && (
+                      <div className="text-orange-500 text-xs">Sản phẩm đã hết hàng</div>
+                    )}
+                  </div>
+                </div>
+              </Col>
+
+              {/* Price */}
+              <Col span={3}>
+                <span>${(productDetails?.price || 0).toFixed(2)}</span>
+              </Col>
+
+              {/* Quantity */}
+              <Col span={4}>
+                <InputNumber
+                  min={1}
+                  value={item.quantity}
+                  onChange={(value) => handleQuantityChange(item, value)}
+                  disabled={isDisabled}
+                  className="w-16"
+                />
+              </Col>
+
+              {/* Total */}
+              <Col span={3}>
+                <span className="font-medium">${((productDetails?.price || 0) * item.quantity).toFixed(2)}</span>
+              </Col>
+
+              {/* Actions */}
+              <Col span={3}>
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleRemoveItem(item)}
+                >
+                  Xóa
+                </Button>
+              </Col>
+            </Row>
+          );
+        })}
       </div>
 
       <div className="flex justify-between items-center">
@@ -472,116 +427,15 @@ const Cart = () => {
         </div>
       </div>
 
-      {/* Modal thanh toán PayPal */}
-      <Modal
-        title="Complete Your Payment"
-        open={paymentModalVisible}
-        onCancel={() => setPaymentModalVisible(false)}
-        footer={null}
-        width={600}
-      >
-        {processingPayment ? (
-          <div className="flex justify-center items-center py-8">
-            <Spin size="large" tip="Processing your order..." />
-          </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2">Shipping Information</h3>
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="text-gray-500 text-sm">Name:</div>
-                    <div className="font-medium">{userProfile?.name}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500 text-sm">Phone:</div>
-                    <div className="font-medium">{userProfile?.phone}</div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="text-gray-500 text-sm">Address:</div>
-                    <div className="font-medium">{userProfile?.address}</div>
-                  </div>
-                </div>
-              </div>
-
-              <h3 className="text-lg font-semibold mb-3">Order Summary</h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                {cartItems
-                  .filter(item => selectedRowKeys.includes(item._id))
-                  .map((item, index) => (
-                    <div key={index} className="flex justify-between mb-2">
-                      <div className="flex items-center">
-                        <span className="font-medium">{item.productDetails.name}</span>
-                        <span className="text-gray-500 ml-2">x{item.quantity}</span>
-                      </div>
-                      <span>${(item.productDetails.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-
-                <Divider className="my-3" />
-
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total:</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-3">Payment Method</h3>
-              <PayPalButtons
-                  style={{
-                    layout: "vertical",
-                    color: "gold",
-                    shape: "rect",
-                    label: "pay"
-                  }}
-                  disabled={totalPrice <= 0}
-                  forceReRender={[totalPrice.toFixed(2), "USD"]}
-                  fundingSource={undefined}
-                  createOrder={(data, actions) => {
-                    return actions.order
-                      .create({
-                        purchase_units: [
-                          {
-                            amount: {
-                              currency_code: "USD",
-                              value: totalPrice.toFixed(2),
-                            },
-                          },
-                        ],
-                        application_context: {
-                          shipping_preference: "NO_SHIPPING"
-                        }
-                      })
-                      .then((orderId) => {
-                        return orderId;
-                      });
-                  }}
-                  onApprove={(data, actions) => {
-                    return actions.order.capture().then((details) => {
-                      console.log("Payment successful:", details);
-                      toast.success(`Payment completed! Transaction ID: ${details.id}`);
-                      onPayPalSuccess(details);
-                    });
-                  }}
-                  onError={(err) => {
-                    console.error("PayPal error:", err);
-                    toast.error("Payment failed. Please try again.");
-                  }}
-                  onCancel={() => {
-                    toast.info("Payment cancelled");
-                  }}
-                />
-            </div>
-
-            <div className="text-sm text-gray-500 mt-4">
-              <p>By completing this payment, you agree to our Terms of Service and Privacy Policy.</p>
-            </div>
-          </>
-        )}
-      </Modal>
+      {/* Sử dụng component CartCheckoutPaypal */}
+      <CartCheckoutPaypal
+        visible={paymentModalVisible}
+        onClose={() => setPaymentModalVisible(false)}
+        userProfile={userProfile}
+        cartItems={cartItems}
+        selectedItems={selectedRowKeys}
+        totalPrice={totalPrice}
+      />
     </div>
   );
 };
