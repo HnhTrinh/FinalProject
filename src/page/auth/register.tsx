@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Alert } from "antd";
 import { UserOutlined, MailOutlined, LockOutlined, PhoneOutlined, HomeOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
-import { IUserData } from "../../types/authen.type";
+
 import { authAPI } from "../../services/api";
 
 const RegisterPage: React.FC = () => {
@@ -12,7 +12,13 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
-  const handleRegister = async (values: IUserData) => {
+  const handleRegister = async (values: {
+    name: string;
+    email: string;
+    password: string;
+    phone: string;
+    address: string;
+  }) => {
     setLoading(true);
     setError(null);
 
