@@ -71,6 +71,14 @@ export const authAPI = {
   register: (data: any) => {
     return axiosInstance.post('/auth/register', data);
   },
+  googleLogin: (tokenId: string) => {
+    return axiosInstance.post('/auth/google', { tokenId });
+  },
+  getGoogleUserInfo: (accessToken: string) => {
+    return axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+  },
   checkToken: () => {
     const token = localStorage.getItem('access_token');
     return {

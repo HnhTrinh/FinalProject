@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Form, Input, Button, Alert } from "antd";
+import { Form, Input, Button, Alert, Divider } from "antd";
 import { UserOutlined, MailOutlined, LockOutlined, PhoneOutlined, HomeOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 
 import { authAPI } from "../../services/api";
+import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
@@ -171,6 +172,12 @@ const RegisterPage: React.FC = () => {
             </Link>
           </div>
         </Form>
+
+        <Divider plain>Or</Divider>
+
+        <div className="mb-4">
+          <GoogleLoginButton />
+        </div>
       </div>
     </div>
   );

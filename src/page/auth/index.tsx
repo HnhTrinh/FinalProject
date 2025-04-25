@@ -4,6 +4,7 @@ import { Form, Input, Button, Alert, Divider } from "antd";
 import { UserOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import { authAPI } from "../../services/api";
+import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +161,10 @@ const LoginPage: React.FC = () => {
         </Form>
 
         <Divider plain>Or</Divider>
+
+        <div className="mb-4">
+          <GoogleLoginButton />
+        </div>
 
         <div className="text-center mt-4">
           <p className="text-gray-600 mb-2">Don't have an account?</p>
