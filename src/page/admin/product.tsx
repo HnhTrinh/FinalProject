@@ -212,7 +212,7 @@ const AdminPage = () => {
   return (
     <div>
       <div>
-        <h2 className="text-3xl font-bold mb-6">Admin Product Management hihi</h2>
+        <h2 className="text-3xl font-bold mb-6">Product</h2>
 
         {/* Product Table */}
         <Button

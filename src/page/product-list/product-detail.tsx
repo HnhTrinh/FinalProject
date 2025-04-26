@@ -63,9 +63,9 @@ const ProductDetailsPage = () => {
     productImage,
   ];
 
-  const handleBuyNow = () => {
-    navigate(`/checkout/${id}`);
-  };
+  // const handleBuyNow = () => {
+  //   navigate(`/checkout/${id}`);
+  // };
 
   // Format feature array for display
   const formatFeatures = (features) => {
@@ -196,9 +196,6 @@ const ProductDetailsPage = () => {
             <div className="flex gap-4">
               {product.amountInStore > 0 ? (
                 <>
-                  <button className="px-6 py-3 bg-blue-500 text-white font-bold text-lg rounded-lg hover:bg-blue-600 hover:scale-105 transform transition-all" onClick={handleBuyNow}>
-                    Buy Now
-                  </button>
                   <button className="px-6 py-3 bg-gray-100 text-gray-800 font-bold text-lg rounded-lg hover:bg-gray-200 hover:scale-105 transform transition-all" onClick={handleAddToCart}>
                     Add to Cart
                   </button>
@@ -246,7 +243,7 @@ const ProductDetailsPage = () => {
       </div>
 
       {/* Sticky Footer for CTA */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg py-4 px-6 md:hidden">
+      {/* <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg py-4 px-6 md:hidden">
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-bold text-gray-800">{product.name}</h3>
@@ -258,7 +255,7 @@ const ProductDetailsPage = () => {
             Buy Now
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

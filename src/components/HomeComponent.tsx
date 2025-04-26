@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { productAPI } from '../services/api';
 import { toast } from 'react-toastify';
 
-const HomeContent = () => {
+const Homecomponent = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -306,5 +306,5 @@ const HomeContent = () => {
   );
 };
 
-export default HomeContent;
+export default Homecomponent;
 

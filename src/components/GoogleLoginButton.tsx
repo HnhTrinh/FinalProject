@@ -9,15 +9,15 @@ const GoogleLoginButton: React.FC = () => {
   const navigate = useNavigate();
 
   const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
+    onSuccess: async (data) => {
       try {
         // Lấy thông tin người dùng từ Google
-        const userInfo = await authAPI.getGoogleUserInfo(tokenResponse.access_token);
+        // const userInfo = await authAPI.getGoogleUserInfo(data.access_token);
 
-        console.log('Google user info:', userInfo.data);
+        // console.log('Google user info:', userInfo.data);
 
         // Gửi access token đến server để xác thực
-        const response = await authAPI.googleLogin(tokenResponse.access_token);
+        const response = await authAPI.googleLogin(data.access_token);
 
         if (response.data?.success) {
           const userData = response.data.data.user;
