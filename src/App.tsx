@@ -10,6 +10,7 @@ import AdminLayout from './layout/admin-layout'
 import Cart from './page/cart/cart'
 import ContactPage from './page/contact/homecontact'
 import AdminPage from './page/admin/product'
+import AdminDashboard from './page/admin/dashboard'
 import AdminCategoryPage from './page/admin/category'
 import AuthInitializer from './components/AuthInitializer'
 import NotFoundPage from './page/not-found'
@@ -61,6 +62,7 @@ function App() {
         {/* Admin routes - chỉ truy cập khi là admin */}
         <Route element={<AuthRoute routeType="admin" />}>
           <Route element={<AdminLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/product" element={<AdminPage />} />
             <Route path="/admin/category" element={<AdminCategoryPage />} />
             <Route path="/admin/orders" element={<AdminOrdersPage />} />

@@ -206,5 +206,12 @@ export const categoryAPI = {
   }
 };
 
+// Dashboard APIs
+export const dashboardAPI = {
+  getStats: () => {
+    return axiosInstance.get('/dashboard');
+  }
+};
+
 export default axiosInstance;
 

@@ -10,7 +10,7 @@ import {
   HomeOutlined,
   SettingOutlined,
   LockOutlined,
-  KeyOutlined
+  KeyOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { userAPI } from '../services/api';
@@ -90,6 +90,11 @@ const AdminNavbar: React.FC = () => {
               {/* Admin Navigation */}
               <div className="flex items-center">
                 <Menu mode="horizontal" theme="dark" className="bg-transparent border-0">
+                
+                {/* <Menu.Item key="products" icon={<ShoppingOutlined />} className="hover:text-blue-400 transition-colors">
+                    <Link to="/admin/dashboard">Dashboard</Link>
+                  </Menu.Item> */}
+
                   <Menu.Item key="products" icon={<ShoppingOutlined />} className="hover:text-blue-400 transition-colors">
                     <Link to="/admin/product">Products</Link>
                   </Menu.Item>
@@ -161,7 +166,7 @@ const AdminNavbar: React.FC = () => {
 
             {/* Right Side - Logo */}
             <div className="flex items-center">
-              <Link to="/admin/product" className="flex items-center">
+              <Link to="/admin/dashboard" className="flex items-center">
                 <DashboardOutlined className="text-blue-400 text-xl mr-2" />
                 <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                   Admin Dashboard
