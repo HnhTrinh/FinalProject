@@ -175,6 +175,20 @@ const ProductDetailsPage = () => {
             <p className="text-3xl text-green-600 font-semibold mb-4">
               {`${(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}
             </p>
+            {/* Call-to-Action Buttons */}
+            <div className="flex gap-4">
+              {product.amountInStore > 0 ? (
+                <>
+                  <button className="px-6 py-3 bg-gray-100 text-gray-800 font-bold text-lg rounded-lg hover:bg-gray-200 hover:scale-105 transform transition-all" onClick={handleAddToCart}>
+                    Add to Cart
+                  </button>
+                </>
+              ) : (
+                <button className="px-6 py-3 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed" disabled>
+                  Out of Stock
+                </button>
+              )}
+            </div>
             <p className="text-lg text-blue-600 mb-4">
               In Stock: {product.amountInStore || 0}
             </p>
@@ -192,20 +206,7 @@ const ProductDetailsPage = () => {
               </ul>
             </div>
 
-            {/* Call-to-Action Buttons */}
-            <div className="flex gap-4">
-              {product.amountInStore > 0 ? (
-                <>
-                  <button className="px-6 py-3 bg-gray-100 text-gray-800 font-bold text-lg rounded-lg hover:bg-gray-200 hover:scale-105 transform transition-all" onClick={handleAddToCart}>
-                    Add to Cart
-                  </button>
-                </>
-              ) : (
-                <button className="px-6 py-3 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed" disabled>
-                  Out of Stock
-                </button>
-              )}
-            </div>
+            
           </div>
         </div>
 
