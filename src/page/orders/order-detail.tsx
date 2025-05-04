@@ -117,7 +117,7 @@ const OrderDetail = () => {
       title: 'Price',
       dataIndex: ['product', 'price'],
       key: 'price',
-      render: (price: number, record: any) => `$${(record.product?.price || 0).toFixed(2)}`,
+      render: (price: number, record: any) => `$${(record.product?.price || 0)}`,
     },
     {
       title: 'Quantity',
@@ -127,7 +127,7 @@ const OrderDetail = () => {
     {
       title: 'Total',
       key: 'total',
-      render: (record: any) => `$${((record.product?.price || 0) * (record.quantity || 1)).toFixed(2)}`,
+      render: (record: any) => `$${((record.product?.price || 0) * (record.quantity || 1))}`,
     },
   ];
 
@@ -242,7 +242,7 @@ const OrderDetail = () => {
         title={
           <div className="flex justify-between items-center">
             <span>Order Items</span>
-            <Typography.Text strong>Total: ${order.totalPrice?.toFixed(2)}</Typography.Text>
+            <Typography.Text strong>Total: ${order.totalPrice}</Typography.Text>
           </div>
         }
         className="mb-6"
@@ -258,7 +258,7 @@ const OrderDetail = () => {
                 Total:
               </Table.Summary.Cell>
               <Table.Summary.Cell index={1} className="font-bold">
-                ${order.totalPrice?.toFixed(2)}
+                ${order.totalPrice}
               </Table.Summary.Cell>
             </Table.Summary.Row>
           )}

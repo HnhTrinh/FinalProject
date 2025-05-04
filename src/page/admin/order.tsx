@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Tag, Button, Input, Select, DatePicker, Card, Statistic, Row, Col, Spin, message } from 'antd';
 import { SearchOutlined, ReloadOutlined, DollarOutlined, ShoppingOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { orderAPI, ORDER_STATUS } from '../../../services/api';
+import { orderAPI, ORDER_STATUS } from '../../services/api';
 
 
 const { RangePicker } = DatePicker;
@@ -14,7 +14,6 @@ const AdminOrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
   const [stats, setStats] = useState({
@@ -80,36 +79,6 @@ const AdminOrdersPage = () => {
     setStats(stats);
   };
 
-  // Apply filters
-  useEffect(() => {
-    let result = [...orders];
-
-    // Apply search filter
-    if (searchText) {
-      result = result.filter(order =>
-        order._id.toLowerCase().includes(searchText.toLowerCase()) ||
-        (order.shippingAddress?.name && order.shippingAddress.name.toLowerCase().includes(searchText.toLowerCase())) ||
-        (order.paymentDetails?.payerEmail && order.paymentDetails.payerEmail.toLowerCase().includes(searchText.toLowerCase()))
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      result = result.filter(order => order.status === statusFilter);
-    }
-
-    // Apply date range filter
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const [startDate, endDate] = dateRange;
-      result = result.filter(order => {
-        const orderDate = new Date(order.createdAt);
-        return orderDate >= startDate && orderDate <= endDate;
-      });
-    }
-
-    setFilteredOrders(result);
-  }, [searchText, statusFilter, dateRange, orders]);
-
   // Handle status change
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -124,6 +93,8 @@ const AdminOrdersPage = () => {
             order._id === orderId ? { ...order, status: newStatus } : order
           )
         );
+        fetchOrders();
+
       } else {
         message.error(response.data?.message || 'Failed to update order status');
       }
@@ -177,7 +148,7 @@ const AdminOrdersPage = () => {
       title: 'Total',
       dataIndex: 'totalPrice',
       key: 'total',
-      render: amount => `$${(amount || 0).toFixed(2)}`,
+      render: amount => `$${(amount || 0)}`,
       sorter: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0),
     },
     {
@@ -279,55 +250,12 @@ const AdminOrdersPage = () => {
                 precision={2}
                 valueStyle={{ color: '#3f8600' }}
                 suffix={<DollarOutlined />}
-                formatter={(value) => `${value.toFixed(2)}`}
+                formatter={(value) => `${value}`}
               />
             </Card>
           </Col>
         </Row>
-
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <Input
-              placeholder="Search by ID, name or email"
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              style={{ width: 250 }}
-            />
-
-            <Select
-              placeholder="Filter by status"
-              style={{ width: 150 }}
-              value={statusFilter}
-              onChange={value => setStatusFilter(value)}
-            >
-              <Option value="all">All Statuses</Option>
-              <Option value={ORDER_STATUS.PENDING}>Pending</Option>
-              <Option value={ORDER_STATUS.PROCESSING}>Processing</Option>
-              <Option value={ORDER_STATUS.SHIPPED}>Shipped</Option>
-              <Option value={ORDER_STATUS.DELIVERED}>Delivered</Option>
-
-            </Select>
-
-            <RangePicker
-              onChange={dates => setDateRange(dates)}
-            />
-
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setSearchText('');
-                setStatusFilter('all');
-                setDateRange(null);
-                fetchOrders();
-              }}
-            >
-              Reset
-            </Button>
-          </div>
-        </div>
-
+       
         {/* Orders Table */}
         <div className="bg-white rounded-lg shadow">
           {loading ? (

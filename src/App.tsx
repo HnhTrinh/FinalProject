@@ -18,8 +18,8 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import OrderList from './page/orders/my-order'
 import OrderDetail from './page/orders/order-detail'
-import AdminOrdersPage from './page/admin/orders/order'
-import AdminOrderDetail from './page/admin/orders/order-detail'
+import AdminOrdersPage from './page/admin/order'
+import AdminOrderDetail from './page/admin/order-detail'
 import { PayPalScriptProvider } from '@paypal/react-paypal-js'
 
 function App() {

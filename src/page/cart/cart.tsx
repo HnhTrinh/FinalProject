@@ -370,7 +370,7 @@ const Cart = () => {
 
               {/* Price */}
               <Col span={3}>
-                <span>${(productDetails?.price || 0).toFixed(2)}</span>
+                <span>${(productDetails?.price || 0)}</span>
               </Col>
 
               {/* Quantity */}
@@ -386,7 +386,7 @@ const Cart = () => {
 
               {/* Total */}
               <Col span={3}>
-                <span className="font-medium">${((productDetails?.price || 0) * item.quantity).toFixed(2)}</span>
+                <span className="font-medium">${((productDetails?.price || 0) * item.quantity)}</span>
               </Col>
 
               {/* Actions */}
@@ -413,7 +413,7 @@ const Cart = () => {
         <div className="text-right">
           <div className="text-lg mb-2">
             <span className="font-medium">Tổng tiền: </span>
-            <span className="text-xl text-red-600 font-bold">${totalPrice.toFixed(2)}</span>
+            <span className="text-xl text-red-600 font-bold">${totalPrice}</span>
           </div>
 
           <Button

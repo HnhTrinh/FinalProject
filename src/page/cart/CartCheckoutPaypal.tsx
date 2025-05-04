@@ -58,7 +58,7 @@ const CartCheckoutPaypal = ({ visible, onClose, userProfile, cartItems, selected
       purchase_units: [{
         amount: {
           currency_code: "USD",
-          value: totalPrice.toFixed(2)
+          value: totalPrice
         }
       }],
       application_context: { shipping_preference: "NO_SHIPPING" }
@@ -111,13 +111,13 @@ const CartCheckoutPaypal = ({ visible, onClose, userProfile, cartItems, selected
                 <span className="font-medium">{item.productDetails.name}</span>
                 <span className="text-gray-500 ml-2">x{item.quantity}</span>
               </div>
-              <span>${(item.productDetails.price * item.quantity).toFixed(2)}</span>
+              <span>${(item.productDetails.price * item.quantity)}</span>
             </div>
           ))}
           <Divider className="my-3" />
           <div className="flex justify-between font-bold text-lg">
             <span>Total:</span>
-            <span>${totalPrice.toFixed(2)}</span>
+            <span>${totalPrice}</span>
           </div>
         </div>
       </div>
@@ -128,7 +128,7 @@ const CartCheckoutPaypal = ({ visible, onClose, userProfile, cartItems, selected
         <PayPalButtons
           style={{ layout: "vertical", color: "gold", shape: "rect", label: "pay" }}
           disabled={totalPrice <= 0}
-          forceReRender={[totalPrice.toFixed(2), "USD"]}
+          forceReRender={[totalPrice, "USD"]}
           createOrder={createPayPalOrder}
           onApprove={onPayPalApprove}
           onError={onPayPalError}

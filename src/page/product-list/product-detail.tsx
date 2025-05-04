@@ -173,7 +173,7 @@ const ProductDetailsPage = () => {
               {product.name}
             </h1>
             <p className="text-3xl text-green-600 font-semibold mb-4">
-              {`${(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}
+             Price: {`${(product.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}
             </p>
             <p className="text-lg text-blue-600 mb-4">
               In Stock: {product.amountInStore || 0}

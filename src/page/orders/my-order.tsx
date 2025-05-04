@@ -76,7 +76,7 @@ const OrderList = () => {
       title: 'Total',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
-      render: (amount: number) => `$${amount?.toFixed(2)}`,
+      render: (amount: number) => `$${amount}`,
       sorter: (a: any, b: any) => a.totalPrice - b.totalPrice,
     },
     {

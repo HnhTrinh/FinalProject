@@ -186,7 +186,7 @@ const Homecomponent = () => {
                   </div>
                   <div className="p-6">
                     <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-                    <p className="text-gray-800 font-bold mb-4">${(product.price || 0).toFixed(2)}</p>
+                    <p className="text-gray-800 font-bold mb-4">${(product.price || 0)}</p>
                     <Link
                       to={`/products/${product._id || product.id}`}
                       className="block text-center bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors mb-2"
